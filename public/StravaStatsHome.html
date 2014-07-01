@@ -10,6 +10,7 @@
             
             var activities;
             var myActivityElements = [];
+            var savedActivityElements = [];
 
             var firstTime = true;
 
@@ -52,16 +53,28 @@
                 // average speed (meters per second)
                 mph = data.average_speed * 2.23694;
 
-                rowToAdd = '<tr><td>' + date + '</td><td>' + data.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + data.calories.toFixed(0) + '</td></tr>';
+                rowToAdd = '<tr><td>' + date + '</td><td>' + data.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + data.calories.toFixed(0) + '</td><td>' + "<input id='" + data.id.toString() + "' type='submit' value='Show details'/>" + '</td></tr>';
                 $('#myTable').append(rowToAdd);
 
                 if (myActivityElements.length == 0) {
+
+                    // rows have been added; add handlers
+                    $.each(savedActivityElements, function (index, activityElement) {
+                        btnId = "#" + activityElement.id.toString();
+                        //$(btnId).on("click", { id: btnId }, showDetailed);
+                        $(btnId).click({ id: btnId }, showDetailed);
+                    });
+
                     return;
                 }
                 else {
                     element = myActivityElements.shift();
                     GetDetailedActivityData(element);
                 }
+            }
+
+            function showDetailed(event) {
+                alert("button pressed: id = " + event.data.id);
             }
 
             function GetDetailedActivityData(element) {
@@ -98,6 +111,7 @@
 
                 $.each(activities, function (index, activityElement) {
                     myActivityElements.push(activityElement);
+                    savedActivityElements.push(activityElement);
                 });
 
                 var element;
@@ -129,7 +143,7 @@
 <body>
     <p>My Strava Data</p>
 
-    <table style="width:715px" id="myTable">
+<!--    <table style="width:795px" id="testTable">
         <col style="width:130px">
         <col style="width:200px">
         <col style="width:100px">
@@ -137,6 +151,7 @@
         <col style="width:65px">
         <col style="width:80px">
         <col style="width:65px">
+        <col style="width:80px">
     <tr>
         <th>Date</th>
         <th>Name</th>
@@ -145,6 +160,39 @@
         <th>Elevation</th>
         <th>Average Speed</th>
         <th>Calories</th>
+        <th></th>
+    </tr>
+    <tr>
+        <td>1-1-2014</td>
+        <td>Kings Mountain</td>
+        <td>1:23:00</td>
+        <td>8.6 miles</td>
+        <td>1795 ft</td>
+        <td>6.9 mph</td>
+        <td>932</td>
+        <td><input type='button' value='Show details'/></td>
+    </tr>-->
+
+    <!--</table>-->
+
+    <table style="width:795px" id="myTable">
+        <col style="width:130px">
+        <col style="width:200px">
+        <col style="width:100px">
+        <col style="width:65px">
+        <col style="width:65px">
+        <col style="width:80px">
+        <col style="width:65px">
+        <col style="width:80px">
+    <tr>
+        <th>Date</th>
+        <th>Name</th>
+        <th>Riding Time</th>        
+        <th>Distance</th>
+        <th>Elevation</th>
+        <th>Average Speed</th>
+        <th>Calories</th>
+        <th></th>
     </tr>
 
     </table>

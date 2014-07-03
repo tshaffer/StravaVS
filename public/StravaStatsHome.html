@@ -61,7 +61,6 @@
                     // rows have been added; add handlers
                     $.each(savedActivityElements, function (index, activityElement) {
                         btnId = "#" + activityElement.id.toString();
-                        //$(btnId).on("click", { id: btnId }, showDetailed);
                         $(btnId).click({ id: btnId }, showDetailed);
                     });
 

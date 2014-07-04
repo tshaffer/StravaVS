@@ -50,14 +50,19 @@ var server = http.createServer(function (request, response) {
     console.log(parsedUrl.pathname);
     console.log(parsedUrl.query);
 
-    if (parsedUrl.pathname == '/getAthleteActivitiesSummary.html') {     // web service call
-        athleteId = parsedUrl.query.id;
+    if (parsedUrl.pathname == '/getAthleteActivitiesSummary.html') {    // web service call
+        //athleteId = parsedUrl.query.id;
         getAthleteActivitiesSummary(response);
         return;
     }
-    else if (request.url == '/') {                              // default to index.html
+    else if (parsedUrl.pathname == '/getDetailedActivity.html') {       // web service call
+        activityId = parsedUrl.query.id;
+        getDetailedActivity(response, activityId);
+        return;
+    }
+    else if (request.url == '/') {                                      // default to index.html
         filePath = 'public/index.html';
-    } else {                                                    // serve static file
+    } else {                                                            // serve static file
         parsedUrl = url.parse(request.url);
         filePath = "public" + parsedUrl.pathname;
     }
@@ -70,6 +75,49 @@ server.listen(8080, function () {
     console.log("Server listening on port 8080.");
 });
 
+
+// get detailed activity
+function getDetailedActivity(response, activityId) {
+    console.log('getDetailedActivity invoked, id = ' + activityId);
+
+    var options = {
+        host: 'www.strava.com',
+        path: '/api/v3/activities/' + activityId.toString(),
+        port: 443,
+        headers: {
+            'Authorization': 'Bearer ' + 'fb8085cc4c7f3633533e875eae3dc1e04cef06e8'
+        }
+    };
+
+    console.log("almost complete url is " + options.host + options.path);
+
+    str = ""
+
+    https.get(options, function (res) {
+        console.log('STATUS: ' + res.statusCode);
+        console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+        res.on('data', function (d) {
+            console.log("chunk received");
+            str += d;
+        });
+        res.on('end', function () {
+            console.log("end received");
+            //console.log(str);
+
+            activityData = JSON.parse(str);
+
+            response.writeHead(
+                200,
+                { "content-type": 'application/json' }
+                );
+            response.end(JSON.stringify(activityData, null, 3));
+        });
+
+    }).on('error', function () {
+        console.log('Caught exception: ' + err);
+    });
+}
 
 // get a list of activities for the authenticated user
 function getAthleteActivitiesSummary(response) {

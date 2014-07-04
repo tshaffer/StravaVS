@@ -72,10 +72,6 @@
                 }
             }
 
-            function showDetailed(event) {
-                alert("button pressed: id = " + event.data.id);
-            }
-
             function GetDetailedActivityData(element) {
 
                 $.ajax({
@@ -168,7 +164,7 @@
 
                 // add button for this particular activity
                 btnId = "#" + activity.id.toString();
-                $(btnId).click({ id: btnId }, showDetailed);
+                $(btnId).click({ id: activity.id.toString() }, showDetailed);
             }
 
             function displayActivitiesTable(activities) {
@@ -194,6 +190,31 @@
 
                     displayActivitiesTable(data);
                 });
+            }
+
+            function getDetailedActivity(activityId) {
+                // get summary activities for the current athlete
+                $.ajax({
+                    url: 'http://localHost:8080/getDetailedActivity.html',
+                    data: { "id": activityId.toString() },
+
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    console.log("success");
+                    console.log(textStatus);
+                    console.log(data);
+
+                    //displayActivitiesTable(data);
+                });
+            }
+
+            function showDetailed(event) {
+                console.log("button pressed: id = " + event.data.id.toString());
+                getDetailedActivity(event.data.id.toString());
+                $('.SummaryActivities').empty();
             }
 
             executeDefault();
@@ -238,25 +259,27 @@
 
     </table>-->
 
-    <table style="width:795px" id="myTable">
-        <col style="width:130px">
-        <col style="width:200px">
-        <col style="width:100px">
-        <col style="width:65px">
-        <col style="width:65px">
-        <col style="width:80px">
-        <col style="width:80px">
-    <tr>
-        <th>Date</th>
-        <th>Name</th>
-        <th>Riding Time</th>        
-        <th>Distance</th>
-        <th>Elevation</th>
-        <th>Average Speed</th>
-        <th></th>
-    </tr>
+    <div class="SummaryActivities">
+        <table style="width:795px" id="myTable">
+            <col style="width:130px">
+            <col style="width:200px">
+            <col style="width:100px">
+            <col style="width:65px">
+            <col style="width:65px">
+            <col style="width:80px">
+            <col style="width:80px">
+        <tr>
+            <th>Date</th>
+            <th>Name</th>
+            <th>Riding Time</th>        
+            <th>Distance</th>
+            <th>Elevation</th>
+            <th>Average Speed</th>
+            <th></th>
+        </tr>
 
-    </table>
+        </table>
+    </div>
 
 </body>
 </html>

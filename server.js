@@ -42,31 +42,99 @@ function serveStatic(response, cache, absPath) {
     }
 }
 
-var server = http.createServer(function(request, response) {
+var server = http.createServer(function (request, response) {
     var filePath = false;
 
-    if (request.url == '/') {
+    parsedUrl = url.parse(request.url, true);
+    console.log(request.url);
+    console.log(parsedUrl.pathname);
+    console.log(parsedUrl.query);
+
+    if (parsedUrl.pathname == '/getAthleteActivitiesSummary.html') {     // web service call
+        athleteId = parsedUrl.query.id;
+        getAthleteActivitiesSummary(response);
+        return;
+    }
+    else if (request.url == '/') {                              // default to index.html
         filePath = 'public/index.html';
-        var absPath = './' + filePath;
-        serveStatic(response, cache, absPath);
-    } else if (request.url == '/showActivities.html')
-    {
-        showActivities(response);
-    } else {
-        //filePath = 'public' + request.url;
-        //console.log("filePath = " + filePath);
+    } else {                                                    // serve static file
         parsedUrl = url.parse(request.url);
         filePath = "public" + parsedUrl.pathname;
-        var absPath = './' + filePath;
-        serveStatic(response, cache, absPath);
     }
-    //var absPath = './' + filePath;
-    //serveStatic(response, cache, absPath);
+    var absPath = './' + filePath;
+    serveStatic(response, cache, absPath);
 });
 
-server.listen(8080, function() {
-  console.log("Server listening on port 8080.");
+
+server.listen(8080, function () {
+    console.log("Server listening on port 8080.");
 });
+
+
+// get a list of activities for the authenticated user
+function getAthleteActivitiesSummary(response) {
+
+    console.log('getAthleteActivitiesSummary invoked');
+
+    var options = {
+        host: 'www.strava.com',
+        path: '/api/v3/athlete/activities',
+        port: 443,
+        headers: {
+            'Authorization': 'Bearer ' + 'fb8085cc4c7f3633533e875eae3dc1e04cef06e8'
+        }
+    };
+
+    str = ""
+
+    https.get(options, function (res) {
+        console.log('STATUS: ' + res.statusCode);
+        console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+        res.on('data', function (d) {
+            console.log("chunk received");
+            str += d;
+        });
+        res.on('end', function () {
+            console.log("end received");
+            //console.log(str);
+
+            activities = JSON.parse(str);
+            console.log(activities[0].id);
+
+            response.writeHead(
+                200,
+                { "content-type": 'application/json' }
+                );
+            response.end(JSON.stringify(activities, null, 3));
+        });
+
+    }).on('error', function () {
+        console.log('Caught exception: ' + err);
+    });
+}
+
+//var server = http.createServer(function(request, response) {
+//    var filePath = false;
+
+//    if (request.url == '/') {
+//        filePath = 'public/index.html';
+//        var absPath = './' + filePath;
+//        serveStatic(response, cache, absPath);
+//    } else if (request.url == '/showActivities.html')
+//    {
+//        showActivities(response);
+//    } else {
+//        //filePath = 'public' + request.url;
+//        //console.log("filePath = " + filePath);
+//        parsedUrl = url.parse(request.url);
+//        filePath = "public" + parsedUrl.pathname;
+//        var absPath = './' + filePath;
+//        serveStatic(response, cache, absPath);
+//    }
+//    //var absPath = './' + filePath;
+//    //serveStatic(response, cache, absPath);
+//});
 
 function showActivities(response) {
     console.log('showActivities invoked');

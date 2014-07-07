@@ -11,118 +11,6 @@
             var friendIds = [];
             var segmentEffortsByFriend = [];
 
-            function displayActivity(activity) {
-
-                // ride date
-                d = new Date(activity.start_date_local);
-                date = d.toDateString();
-
-                // distance
-                miles = activity.distance * 0.000621371;
-
-                // riding time
-                hours = Math.floor(activity.moving_time / 3600);
-
-                minutes = Math.floor((activity.moving_time - 3600 * hours) / 60);
-                minutesStr = minutes.toString();
-                if (minutesStr.length == 1) {
-                    minutesStr = "0" + minutesStr;
-                }
-
-                seconds = Math.floor(activity.moving_time - (3600 * hours) - (60 * minutes));
-                secondsStr = seconds.toString();
-                if (secondsStr.length == 1) {
-                    secondsStr = "0" + secondsStr;
-                }
-
-                movingTime = "";
-                if (hours > 0) {
-                    movingTime = hours + ':';
-                }
-                movingTime += minutesStr + ':' + secondsStr;
-
-                // elevation gain
-                elevationGain = activity.total_elevation_gain * 3.28084;
-                elevationGain = Math.floor(elevationGain);
-
-                // average speed (meters per second)
-                mph = activity.average_speed * 2.23694;
-
-                rowToAdd = '<tr><td>' + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + "<input id='" + activity.id.toString() + "' type='submit' value='Show details'/>" + '</td></tr>';
-                $('#myTable').append(rowToAdd);
-
-                // add button handler for this particular activity
-                btnId = "#" + activity.id.toString();
-                $(btnId).click({ id: activity.id.toString() }, showDetailed);
-            }
-
-            function displayActivitiesTable(activities) {
-
-                $.each(activities, function (index, activityElement) {
-                    console.log("activityElement id = " + activityElement.id);
-                    displayActivity(activityElement);
-                });
-            }
-
-            function displaySegmentEffort(segmentEffort) {
-
-                hours = Math.floor(segmentEffort.moving_time / 3600);
-
-                minutes = Math.floor((segmentEffort.moving_time - 3600 * hours) / 60);
-                minutesStr = minutes.toString();
-                if (minutesStr.length == 1) {
-                    minutesStr = "0" + minutesStr;
-                }
-
-                seconds = Math.floor(segmentEffort.moving_time - (3600 * hours) - (60 * minutes));
-                secondsStr = seconds.toString();
-                if (secondsStr.length == 1) {
-                    secondsStr = "0" + secondsStr;
-                }
-
-                movingTime = "";
-                if (hours > 0) {
-                    movingTime = hours + ':';
-                }
-                movingTime += minutesStr + ':' + secondsStr;
-
-                rowToAdd = '<tr><td>' + segmentEffort.name + '</td><td>' + movingTime + '</td><td>' + segmentEffort.distance + '</td><td>' + "<input id='" + segmentEffort.segment.id.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
-                $('#DetailedActivityTable').append(rowToAdd);
-
-                // add button handler to show friends' result for this segment
-                btnId = "#" + segmentEffort.segment.id.toString();
-                $(btnId).click({ id: segmentEffort.segment.id.toString(), name: segmentEffort.segment.name }, showFriendsResults);
-
-            }
-
-            function displayActivityDetails(activity) {
-                $('#activityName').html("Ride name is " + activity.name);
-
-                segmentEfforts = activity.segment_efforts;
-                $.each(segmentEfforts, function (index, segmentEffort) {
-                    displaySegmentEffort(segmentEffort);
-                });
-            }
-
-            function getDetailedActivity(activityId) {
-                // get summary activities for the current athlete
-                $.ajax({
-                    url: 'http://localHost:8080/getDetailedActivity.html',
-                    data: { "id": activityId.toString() },
-
-                    type: 'GET',
-                    dataType: 'json',
-                    error: function () { alert('Failed!'); },
-                })
-                .success(function (data, textStatus, jqXHR) {
-                    console.log("success");
-                    console.log(textStatus);
-                    console.log(data);
-
-                    displayActivityDetails(data);
-                });
-            }
-
             function displayFriendSegmentEffort(segmentEffort) {
                 console.log('displayFriendSegmentEffort invoked, segmentEffort=');
                 console.log(segmentEffort);
@@ -231,17 +119,138 @@
                 $('#SegmentEffortsFriends').show();    // show the friends segment efforts table
             }
 
-            function showDetailed(event) {
+            function buildSegmentEffortsRow(segmentEffort) {
+
+                hours = Math.floor(segmentEffort.moving_time / 3600);
+
+                minutes = Math.floor((segmentEffort.moving_time - 3600 * hours) / 60);
+                minutesStr = minutes.toString();
+                if (minutesStr.length == 1) {
+                    minutesStr = "0" + minutesStr;
+                }
+
+                seconds = Math.floor(segmentEffort.moving_time - (3600 * hours) - (60 * minutes));
+                secondsStr = seconds.toString();
+                if (secondsStr.length == 1) {
+                    secondsStr = "0" + secondsStr;
+                }
+
+                movingTime = "";
+                if (hours > 0) {
+                    movingTime = hours + ':';
+                }
+                movingTime += minutesStr + ':' + secondsStr;
+
+                rowToAdd = '<tr><td>' + segmentEffort.name + '</td><td>' + movingTime + '</td><td>' + segmentEffort.distance + '</td><td>' + "<input id='" + segmentEffort.segment.id.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
+                $('#DetailedActivityTable').append(rowToAdd);
+
+                // add button handler to show friends' result for this segment
+                btnId = "#" + segmentEffort.segment.id.toString();
+                $(btnId).click({ id: segmentEffort.segment.id.toString(), name: segmentEffort.segment.name }, showFriendsResults);
+
+            }
+
+            function buildSegmentEffortsTable(activity) {
+                $('#activityName').html("Ride name is " + activity.name);
+
+                segmentEfforts = activity.segment_efforts;
+                $.each(segmentEfforts, function (index, segmentEffort) {
+                    buildSegmentEffortsRow(segmentEffort);
+                });
+            }
+
+            function showActivityDetailsTable(event) {
+                $('#SummaryActivities').hide();
+                $('#DetailedActivity').show();
+            }
+
+            function getDetailedActivity(activityId) {
+                // get detailed activity data for the current athlete
+                $.ajax({
+                    url: 'http://localHost:8080/getDetailedActivity.html',
+                    data: { "id": activityId.toString() },
+
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    console.log("success");
+                    console.log(textStatus);
+                    console.log(data);
+
+                    buildSegmentEffortsTable(data);
+                    showActivityDetailsTable();
+                });
+            }
+
+            function showDetails(event) {
                 console.log("button pressed: id = " + event.data.id.toString());
                 getDetailedActivity(event.data.id.toString());
-                //$('.SummaryActivities').empty();   // empties the div
-                $('.SummaryActivities').hide();      // just hides the div
-                $('#DetailedActivity').show();         // show the segment efforts table
+            }
+
+            function buildActivityRow(activity) {
+
+                // ride date
+                d = new Date(activity.start_date_local);
+                date = d.toDateString();
+
+                // distance
+                miles = activity.distance * 0.000621371;
+
+                // riding time
+                hours = Math.floor(activity.moving_time / 3600);
+
+                minutes = Math.floor((activity.moving_time - 3600 * hours) / 60);
+                minutesStr = minutes.toString();
+                if (minutesStr.length == 1) {
+                    minutesStr = "0" + minutesStr;
+                }
+
+                seconds = Math.floor(activity.moving_time - (3600 * hours) - (60 * minutes));
+                secondsStr = seconds.toString();
+                if (secondsStr.length == 1) {
+                    secondsStr = "0" + secondsStr;
+                }
+
+                movingTime = "";
+                if (hours > 0) {
+                    movingTime = hours + ':';
+                }
+                movingTime += minutesStr + ':' + secondsStr;
+
+                // elevation gain
+                elevationGain = activity.total_elevation_gain * 3.28084;
+                elevationGain = Math.floor(elevationGain);
+
+                // average speed (meters per second)
+                mph = activity.average_speed * 2.23694;
+
+                rowToAdd = '<tr><td>' + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + "<input id='" + activity.id.toString() + "' type='submit' value='Show details'/>" + '</td></tr>';
+                $('#myTable').append(rowToAdd);
+
+                // add button handler for this particular activity
+                btnId = "#" + activity.id.toString();
+                $(btnId).click({ id: activity.id.toString() }, showDetails);
+            }
+
+            function buildActivitiesTable(activities) {
+
+                $.each(activities, function (index, activityElement) {
+                    console.log("activityElement id = " + activityElement.id);
+                    buildActivityRow(activityElement);
+                });
+            }
+
+            function showActivitiesTable() {
+                $('#SegmentEffortsFriends').hide();
+                $('#DetailedActivity').hide();
+                $('#SummaryActivities').show();
             }
 
             // get summary activities for the current athlete
             $.ajax({
-                url: 'http://localHost:8080/getAthleteActivitiesSummary.html',
+                url: 'http://localHost:8080/listAthleteActivities.html',
                 type: 'GET',
                 dataType: 'json',
                 error: function () { alert('Failed!'); },
@@ -251,7 +260,8 @@
                 console.log(textStatus);
                 console.log(data);
 
-                displayActivitiesTable(data);
+                buildActivitiesTable(data);
+                showActivitiesTable();
             });
 
         });
@@ -282,7 +292,7 @@
 <body>
     <p>My Strava Data</p>
 
-    <div class="SummaryActivities">
+    <div id="SummaryActivities">
         <table style="width:795px" id="myTable">
             <col style="width:130px">
             <col style="width:200px">

@@ -50,9 +50,8 @@ var server = http.createServer(function (request, response) {
     console.log(parsedUrl.pathname);
     console.log(parsedUrl.query);
 
-    if (parsedUrl.pathname == '/getAthleteActivitiesSummary.html') {    // web service call
-        //athleteId = parsedUrl.query.id;
-        getAthleteActivitiesSummary(response);
+    if (parsedUrl.pathname == '/listAthleteActivities.html') {          // web service call
+        listAthleteActivities(response);
         return;
     }
     else if (parsedUrl.pathname == '/getDetailedActivity.html') {       // web service call
@@ -169,9 +168,9 @@ function getDetailedActivity(response, activityId) {
 }
 
 // get a list of activities for the authenticated user
-function getAthleteActivitiesSummary(response) {
+function listAthleteActivities(response) {
 
-    console.log('getAthleteActivitiesSummary invoked');
+    console.log('listAthleteActivities invoked');
 
     var options = {
         host: 'www.strava.com',

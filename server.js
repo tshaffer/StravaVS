@@ -60,6 +60,12 @@ var server = http.createServer(function (request, response) {
         getDetailedActivity(response, activityId);
         return;
     }
+    else if (parsedUrl.pathname == '/getSegmentEffortsForAthlete.html') {
+        segmentId = parsedUrl.query.segment_id;
+        athleteId = parsedUrl.query.athlete_id;
+        getSegmentEffortsForAthlete(response, segmentId, athleteId);
+        return;
+    }
     else if (request.url == '/') {                                      // default to index.html
         filePath = 'public/index.html';
     } else {                                                            // serve static file
@@ -75,6 +81,49 @@ server.listen(8080, function () {
     console.log("Server listening on port 8080.");
 });
 
+
+// get segment efforts for a friend
+function getSegmentEffortsForAthlete(response, segmentId, athleteId) {
+    console.log('getSegmentEffortsForAthlete invoked, segmentId = ' + segmentId + ', athleteId = ' + athleteId);
+
+    var options = {
+        host: 'www.strava.com',
+        path: '/api/v3/segments/' + segmentId.toString() + '/all_efforts?athlete_id=' + athleteId.toString(),
+        port: 443,
+        headers: {
+            'Authorization': 'Bearer ' + 'fb8085cc4c7f3633533e875eae3dc1e04cef06e8'
+        }
+    };
+
+    console.log("complete url is " + options.host + options.path);
+
+    str = ""
+
+    https.get(options, function (res) {
+        console.log('STATUS: ' + res.statusCode);
+        console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+        res.on('data', function (d) {
+            console.log("chunk received");
+            str += d;
+        });
+        res.on('end', function () {
+            console.log("end received");
+            //console.log(str);
+
+            data = JSON.parse(str);
+
+            response.writeHead(
+                200,
+                { "content-type": 'application/json' }
+                );
+            response.end(JSON.stringify(data, null, 3));
+        });
+
+    }).on('error', function () {
+        console.log('Caught exception: ' + err);
+    });
+}
 
 // get detailed activity
 function getDetailedActivity(response, activityId) {

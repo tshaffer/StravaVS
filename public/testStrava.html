@@ -53,7 +53,24 @@
                     //data: { "athlete_id": "2843574" },
 
                     // retrieve a detailed segment object
-                    url: 'https://www.strava.com/api/v3/segments/' + '1334338',
+                    //url: 'https://www.strava.com/api/v3/segments/' + '1334338',
+
+                    // list athlete friends
+                    //url: 'https://www.strava.com/api/v3/athlete/friends',
+
+                    // list friend's activities
+                    //url: 'https://www.strava.com/api/v3/activities/following',
+
+                    // retrieve an activity
+                    // for Joel Brown, use 161492826
+                    //url: 'https://www.strava.com/api/v3/activities/158581862',
+                     //url: 'https://www.strava.com/api/v3/activities/161492826',
+
+                    // list efforts for a given segment by athlete
+                    // try segment id: 4802087
+                    url: 'https://www.strava.com/api/v3/segments/4802087/all_efforts',
+                    //data: { "athlete_id": "1681275" },
+                    data: { "athlete_id": "2843574" },
 
                     type: 'GET',
                     //crossDomain: true,

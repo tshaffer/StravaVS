@@ -8,13 +8,10 @@
     <script>
         $(document).ready(function () {
           
-            var friendIds = [];
-            var segmentEffortsByFriend = [];
+            var athleteIds = [];
+            var segmentEffortsByAthlete = [];
 
             function displayFriendSegmentEffort(segmentEffort) {
-                console.log('displayFriendSegmentEffort invoked, segmentEffort=');
-                console.log(segmentEffort);
-                console.log("moving time = " + segmentEffort.moving_time);
 
                 hours = Math.floor(segmentEffort.moving_time / 3600);
 
@@ -45,42 +42,36 @@
                 console.log("row added: " + rowToAdd);
             }
 
-            function displaySegmentEffortsFriends(segmentName) {
-                console.log('displaySegmentEffortsFriends invoked, segmentName=' + segmentName);
+            function displaySummarySegmentEfforts(segmentName) {
+                console.log('displaySummarySegmentEfforts invoked, segmentName=' + segmentName);
 
                 $('#effortName').html("Segment is " + segmentName);
 
-                console.log('segmentEffortsByFriend:');
-                console.log(segmentEffortsByFriend);
-
-                $.each(segmentEffortsByFriend, function (index, friendEfforts) {
-                    console.log('friendEfforts:');
-                    console.log(friendEfforts);
+                // loop through each athlete, outputting each segment effort for the given athlete
+                $.each(segmentEffortsByAthlete, function (index, friendEfforts) {
                     $.each(friendEfforts.segmentEffort, function (index, friendEffort) {
-                        //console.log('friendEffort:');
-                        //console.log(friendEffort);
                         displayFriendSegmentEffort(friendEffort);
                     });
                 });
             }
 
-            function getSegmentEffortsForFriends(segmentId, segmentName) {
-                console.log('getSegmentEffortsForFriends invoked:' + segmentId + ' ' + segmentName);
+            function getSummarySegmentEfforts(segmentId, segmentName) {
+                console.log('getSummarySegmentEfforts invoked:' + segmentId + ' ' + segmentName);
 
-                // get the id of the next friend
-                if (friendIds.length == 0) {
-                    displaySegmentEffortsFriends(segmentName);
+                // get the id of the next athlete
+                if (athleteIds.length == 0) {
+                    displaySummarySegmentEfforts(segmentName);
                     return;
                 }
 
-                friendId = friendIds.shift();
+                athleteId = athleteIds.shift();
 
-                console.log('friendId:' + friendId);
+                console.log('athleteId:' + athleteId);
 
                 // get summary activities for the specified athlete
                 $.ajax({
                     url: 'http://localHost:8080/getSegmentEffortsForAthlete.html',
-                    data: { "segment_id": segmentId.toString(), "athlete_id": friendId.toString() },
+                    data: { "segment_id": segmentId.toString(), "athlete_id": athleteId.toString() },
 
                     type: 'GET',
                     dataType: 'json',
@@ -91,12 +82,12 @@
                     console.log(textStatus);
                     console.log(data);
 
-                    segmentEffortByFriend = {};
-                    segmentEffortByFriend.athleteId = friendId;
-                    segmentEffortByFriend.segmentEffort = data;
-                    segmentEffortsByFriend.push(segmentEffortByFriend);
+                    summarySegmentEffort = {};
+                    summarySegmentEffort.athleteId = athleteId;
+                    summarySegmentEffort.segmentEffort = data;
+                    segmentEffortsByAthlete.push(summarySegmentEffort);
 
-                    getSegmentEffortsForFriends(segmentId, segmentName);
+                    getSummarySegmentEfforts(segmentId, segmentName);
                 });
             }
 
@@ -104,17 +95,17 @@
                 console.log("button pressed: id = " + event.data.id.toString());
                 console.log(event.data.name);
 
-                segmentEffortsByFriend = [];
+                segmentEffortsByAthlete = [];
 
-                friendIds = [];
-                friendIds.push('1681275');
-                friendIds.push('2843574');
+                athleteIds = [];
+                athleteIds.push('1681275');
+                athleteIds.push('2843574');
 
-                getSegmentEffortsForFriends(event.data.id, event.data.name);
+                getSummarySegmentEfforts(event.data.id, event.data.name);
 
                 //getSegmentEffortsForAthlete(event.data.id, '1681275');   // Joel Brown
                 //getSegmentEffortsForAthlete(event.data.id, '2843574');   // Me
-                //displaySegmentEffortsFriends(event.data.name);
+                //displaySummarySegmentEfforts(event.data.name);
                 $('#DetailedActivity').hide();         // show the segment efforts table
                 $('#SegmentEffortsFriends').show();    // show the friends segment efforts table
             }

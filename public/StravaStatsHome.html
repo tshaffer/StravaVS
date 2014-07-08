@@ -11,17 +11,22 @@
             var athleteIds = [];
             var segmentEffortsByAthlete = [];
 
-            function displayFriendSegmentEffort(segmentEffort) {
+            function getDistance(distanceInMeters) {
+                distanceInMiles = distanceInMeters * 0.000621371;
+                return distanceInMiles;
+            }
 
-                hours = Math.floor(segmentEffort.moving_time / 3600);
+            function getMovingTime(moving_time) {
 
-                minutes = Math.floor((segmentEffort.moving_time - 3600 * hours) / 60);
+                hours = Math.floor(moving_time / 3600);
+
+                minutes = Math.floor((moving_time - 3600 * hours) / 60);
                 minutesStr = minutes.toString();
                 if (minutesStr.length == 1) {
                     minutesStr = "0" + minutesStr;
                 }
 
-                seconds = Math.floor(segmentEffort.moving_time - (3600 * hours) - (60 * minutes));
+                seconds = Math.floor(moving_time - (3600 * hours) - (60 * minutes));
                 secondsStr = seconds.toString();
                 if (secondsStr.length == 1) {
                     secondsStr = "0" + secondsStr;
@@ -31,7 +36,14 @@
                 if (hours > 0) {
                     movingTime = hours + ':';
                 }
+
                 movingTime += minutesStr + ':' + secondsStr;
+                return movingTime;
+            }
+
+            function displayFriendSegmentEffort(segmentEffort) {
+
+                movingTime = getMovingTime(segmentEffort.moving_time);
 
                 // ride date
                 d = new Date(segmentEffort.start_date_local);
@@ -112,27 +124,11 @@
 
             function buildSegmentEffortsRow(segmentEffort) {
 
-                hours = Math.floor(segmentEffort.moving_time / 3600);
+                movingTime = getMovingTime(segmentEffort.moving_time);
 
-                minutes = Math.floor((segmentEffort.moving_time - 3600 * hours) / 60);
-                minutesStr = minutes.toString();
-                if (minutesStr.length == 1) {
-                    minutesStr = "0" + minutesStr;
-                }
+                distanceInMiles = getDistance(segmentEffort.distance);
 
-                seconds = Math.floor(segmentEffort.moving_time - (3600 * hours) - (60 * minutes));
-                secondsStr = seconds.toString();
-                if (secondsStr.length == 1) {
-                    secondsStr = "0" + secondsStr;
-                }
-
-                movingTime = "";
-                if (hours > 0) {
-                    movingTime = hours + ':';
-                }
-                movingTime += minutesStr + ':' + secondsStr;
-
-                rowToAdd = '<tr><td>' + segmentEffort.name + '</td><td>' + movingTime + '</td><td>' + segmentEffort.distance + '</td><td>' + "<input id='" + segmentEffort.segment.id.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
+                rowToAdd = '<tr><td>' + segmentEffort.name + '</td><td>' + movingTime + '</td><td>' + distanceInMiles.toFixed(1) + '</td><td>' + "<input id='" + segmentEffort.segment.id.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
                 $('#DetailedActivityTable').append(rowToAdd);
 
                 // add button handler to show friends' result for this segment
@@ -190,25 +186,7 @@
                 miles = activity.distance * 0.000621371;
 
                 // riding time
-                hours = Math.floor(activity.moving_time / 3600);
-
-                minutes = Math.floor((activity.moving_time - 3600 * hours) / 60);
-                minutesStr = minutes.toString();
-                if (minutesStr.length == 1) {
-                    minutesStr = "0" + minutesStr;
-                }
-
-                seconds = Math.floor(activity.moving_time - (3600 * hours) - (60 * minutes));
-                secondsStr = seconds.toString();
-                if (secondsStr.length == 1) {
-                    secondsStr = "0" + secondsStr;
-                }
-
-                movingTime = "";
-                if (hours > 0) {
-                    movingTime = hours + ':';
-                }
-                movingTime += minutesStr + ':' + secondsStr;
+                movingTime = getMovingTime(activity.moving_time);
 
                 // elevation gain
                 elevationGain = activity.total_elevation_gain * 3.28084;

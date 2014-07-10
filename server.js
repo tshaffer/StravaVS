@@ -50,7 +50,19 @@ var server = http.createServer(function (request, response) {
     console.log(parsedUrl.pathname);
     console.log(parsedUrl.query);
 
-    if (parsedUrl.pathname == '/listAthleteActivities.html') {          // web service call
+    if (parsedUrl.pathname == '/StravaStatsHome.html') {                  // part of authentication
+        console.log("StravaStatsHome invoked");
+        console.log("query is ");
+        console.log(parsedUrl.query);
+        performTokenExchange(parsedUrl.query.code);
+
+        filePath = "public" + "/StravaStatsHome.html";
+        var absPath = './' + filePath;
+        serveStatic(response, cache, absPath);
+
+        return;
+    }
+    else if (parsedUrl.pathname == '/listAthleteActivities.html') {          // web service call
         listAthleteActivities(response);
         return;
     }
@@ -81,6 +93,66 @@ server.listen(8080, function () {
 });
 
 
+// perform token exchange with Strava server
+function performTokenExchange(code) {
+
+    console.log("Code is " + parsedUrl.query.code);
+
+    code = parsedUrl.query.code;
+
+    postData = {}
+
+    postData.client_id = 2055;
+    postData.client_secret = "85f821429c9da1ef02b627058119a4253eafd16d";
+    postData.code = code;
+
+    var postDataStr = JSON.stringify(postData);
+
+    var options = {
+        hostname: 'www.strava.com',
+        port: 443,
+        path: '/oauth/token',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Content-Length': postDataStr.length
+        }
+    };
+
+    var str = ""
+
+    var req = https.request(options, function (res) {
+        console.log('STATUS: ' + res.statusCode);
+        console.log('HEADERS: ' + JSON.stringify(res.headers));
+        res.setEncoding('utf8');
+        res.on('data', function (chunk) {
+            //console.log('BODY: ' + chunk);
+            console.log("data received");
+            str += chunk;
+        });
+        res.on('end', function () {
+            console.log("end received");
+            console.log(str);
+
+            //data = JSON.parse(str);
+
+            //response.writeHead(
+            //    200,
+            //    { "content-type": 'application/json' }
+            //    );
+            //response.end(JSON.stringify(data, null, 3));
+        });
+    });
+
+    req.on('error', function (e) {
+        console.log('problem with request: ' + e.message);
+    });
+
+    // write data to request body
+    req.write(postDataStr);
+    req.end();
+}
+
 // get segment efforts for a friend
 function getSegmentEffortsForAthlete(response, segmentId, athleteId) {
     console.log('getSegmentEffortsForAthlete invoked, segmentId = ' + segmentId + ', athleteId = ' + athleteId);
@@ -96,7 +168,7 @@ function getSegmentEffortsForAthlete(response, segmentId, athleteId) {
 
     console.log("complete url is " + options.host + options.path);
 
-    str = ""
+    var str = ""
 
     https.get(options, function (res) {
         console.log('STATUS: ' + res.statusCode);
@@ -139,7 +211,7 @@ function getDetailedActivity(response, activityId) {
 
     console.log("almost complete url is " + options.host + options.path);
 
-    str = ""
+    var str = ""
 
     https.get(options, function (res) {
         console.log('STATUS: ' + res.statusCode);
@@ -181,7 +253,7 @@ function listAthleteActivities(response) {
         }
     };
 
-    str = ""
+    var str = ""
 
     https.get(options, function (res) {
         console.log('STATUS: ' + res.statusCode);
@@ -254,7 +326,7 @@ function showActivities(response) {
 
     //https.get('https://www.strava.com/api/v3/athlete/activities?access_token=fb8085cc4c7f3633533e875eae3dc1e04cef06e8', function (res) {
 
-    str = ""
+    var str = ""
 
     https.get(options, function (res) {
         console.log('STATUS: ' + res.statusCode);

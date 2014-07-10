@@ -8,83 +8,86 @@
 
     <script>
         $(document).ready(function () {
+
+            console.log("I have been invoked");
+
             //alert("Here I am!");
 
-            function GetQueryStringParams(sParam) {
-                sPageURL = window.location.search.substring(1);
-                sURLVariables = sPageURL.split('&');
-                for (i = 0; i < sURLVariables.length; i++) {
-                    sParameterName = sURLVariables[i].split('=');
-                    if (sParameterName[0] == sParam) {
-                        return sParameterName[1];
-                    }
-                }
-                return "pizza";
-            }
+            //function GetQueryStringParams(sParam) {
+            //    sPageURL = window.location.search.substring(1);
+            //    sURLVariables = sPageURL.split('&');
+            //    for (i = 0; i < sURLVariables.length; i++) {
+            //        sParameterName = sURLVariables[i].split('=');
+            //        if (sParameterName[0] == sParam) {
+            //            return sParameterName[1];
+            //        }
+            //    }
+            //    return "pizza";
+            //}
 
-            function post(path, params, method) {
-                method = method || "post"; // Set method to post by default if not specified.
+            //function post(path, params, method) {
+            //    method = method || "post"; // Set method to post by default if not specified.
 
-                // The rest of this code assumes you are not using a library.
-                // It can be made less wordy if you use one.
-                var form = document.createElement("form");
-                form.setAttribute("method", method);
-                form.setAttribute("action", path);
+            //    // The rest of this code assumes you are not using a library.
+            //    // It can be made less wordy if you use one.
+            //    var form = document.createElement("form");
+            //    form.setAttribute("method", method);
+            //    form.setAttribute("action", path);
 
-                for (var key in params) {
-                    if (params.hasOwnProperty(key)) {
-                        var hiddenField = document.createElement("input");
-                        hiddenField.setAttribute("type", "hidden");
-                        hiddenField.setAttribute("name", key);
-                        hiddenField.setAttribute("value", params[key]);
+            //    for (var key in params) {
+            //        if (params.hasOwnProperty(key)) {
+            //            var hiddenField = document.createElement("input");
+            //            hiddenField.setAttribute("type", "hidden");
+            //            hiddenField.setAttribute("name", key);
+            //            hiddenField.setAttribute("value", params[key]);
 
-                        form.appendChild(hiddenField);
-                    }
-                }
+            //            form.appendChild(hiddenField);
+            //        }
+            //    }
 
-                document.body.appendChild(form);
-                form.submit();
-            }
+            //    document.body.appendChild(form);
+            //    form.submit();
+            //}
 
-            var code = GetQueryStringParams('code');
+            //var code = GetQueryStringParams('code');
 
-            //alert("code is " + code);
+            ////alert("code is " + code);
 
-            postData = {}
+            //postData = {}
 
-            postData.client_id = 2055;
-            postData.client_secret = "85f821429c9da1ef02b627058119a4253eafd16d";
-            postData.code = code;
+            //postData.client_id = 2055;
+            //postData.client_secret = "85f821429c9da1ef02b627058119a4253eafd16d";
+            //postData.code = code;
 
-            $.ajax({
-                statusCode: {
-                    200: function () {
-                        alert("page found");
-                    },
-                    302: function () {
-                        alert("page redirect");
-                    }
-                },
-                url: "https://www.strava.com/oauth/token",
-                type: "POST",
-                //dataType: 'jsonp',
-                crossDomain: true,
-                cache: true,
-                jsonp: false,
-                jsonpCallback: 'localJsonpCallback',
-                contentType: 'application/json; charset=utf-8',
-                data: postData,
-                success: function () {
-                    alert("success");
-                },
-                error: function (jqxhr, textStatus, error) {
-                    alert("textStatus : " + textStatus + "\n error" + error);
-                }
-            });
+            //$.ajax({
+            //    statusCode: {
+            //        200: function () {
+            //            alert("page found");
+            //        },
+            //        302: function () {
+            //            alert("page redirect");
+            //        }
+            //    },
+            //    url: "https://www.strava.com/oauth/token",
+            //    type: "POST",
+            //    //dataType: 'jsonp',
+            //    crossDomain: true,
+            //    cache: true,
+            //    jsonp: false,
+            //    jsonpCallback: 'localJsonpCallback',
+            //    contentType: 'application/json; charset=utf-8',
+            //    data: postData,
+            //    success: function () {
+            //        alert("success");
+            //    },
+            //    error: function (jqxhr, textStatus, error) {
+            //        alert("textStatus : " + textStatus + "\n error" + error);
+            //    }
+            //});
 
-            function localJsonpCallback(data) {
-                alert("localJsonpCallback : " + data);
-            }
+            //function localJsonpCallback(data) {
+            //    alert("localJsonpCallback : " + data);
+            //}
 
 
             //post("https://www.strava.com/oauth/token", postData);
@@ -106,6 +109,6 @@
     </script>
 </head>
 <body>
-
+    Hello world
 </body>
 </html>

@@ -4,6 +4,7 @@ var fs = require('fs');
 var path = require('path');
 var mime = require('mime');
 var url = require('url');
+var mysql = require('mysql');
 
 var cache = {};
 
@@ -41,6 +42,39 @@ function serveStatic(response, cache, absPath) {
         });
     }
 }
+
+console.log('create connection');
+
+var db = mysql.createConnection({
+    host: '127.0.0.1',
+    user: 'ted',
+    password: 'ted69',
+    database: 'strava'
+});
+
+console.log("connect");
+
+db.connect();
+
+console.log('connected as id ' + db.threadId);
+
+db.query('SELECT 1 + 1 AS solution', function (err, rows, fields) {
+    if (err) throw err;
+
+    console.log('The solution is: ', rows[0].solution);
+});
+
+db.query(
+  "CREATE TABLE IF NOT EXISTS authenticatedAthlete ("
+  + "athleteId INT(10) NOT NULL, "
+  + "authorizationKey LONGTEXT NOT NULL,"
+  + "PRIMARY KEY(athleteId))",
+  function (err) {
+      if (err) throw err;
+      console.log("db query successful");
+      // note - should not proceed to createServer until this callback is executed
+  }
+);
 
 var server = http.createServer(function (request, response) {
     var filePath = false;
@@ -139,6 +173,42 @@ function performTokenExchange(response, code) {
             console.log("the authentication data is");
             console.log(authenticationData);
 
+            // add the authentication data to the data base if it's not already there
+
+            // is the athlete already in the database?
+            console.log("query for existing athlete entry");
+            var query = "SELECT * FROM authenticatedathlete " +
+              "WHERE athleteId=?";
+            db.query(
+              query,
+              [authenticationData.athleteId],
+              function (err, rows) {
+                  if (err) throw err;
+                  console.log("return from query - rows length = " + rows.length);
+
+                  if (rows.length == 0) {
+                      console.log("add authentication data to the db");
+
+                      db.query(
+                        "INSERT INTO authenticatedathlete (athleteId, authorizationKey) " +
+                        " VALUES (?, ?)",
+                        [authenticationData.athleteId, authenticationData.accessToken],
+                        function (err) {
+                            if (err) throw err;
+                            console.log("added authenticated athlete successfully");
+                            // in theory, shouldn't necessarily execute steps below until this callback is executed
+                        }
+                      );
+                  }
+                  else {
+                      console.log("The following row was returned from the db");
+                      console.log(rows[0]);
+                      // todo? - check that the authenticationKey hasn't changed. If it has, update the db?
+                  }
+              }
+            );
+
+
             filePath = "public" + "/StravaStatsHome.html";
             var absPath = './' + filePath;
 
@@ -151,7 +221,6 @@ function performTokenExchange(response, code) {
                             // replace placeholder for athlete id with the real value
                             console.log("search for data-athlete");
                             var dataAsStr = String(data);
-                            //var finalDataAsStr = dataAsStr.replace("athleteIdPlaceholder", authenticationData.athleteId.toString());
                             var finalDataAsStr = dataAsStr.replace("athleteIdPlaceholder", authenticationData.athleteId);
                             sendFile(response, absPath, finalDataAsStr);
                         }
@@ -264,6 +333,7 @@ function listAthleteActivities(response, athleteId) {
 
     console.log('listAthleteActivities invoked');
     console.log('athleteId=', athleteId);
+    console.log("type of athleteId is " + typeof athleteId);
 
     var options = {
         host: 'www.strava.com',

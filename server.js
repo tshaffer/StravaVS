@@ -54,16 +54,11 @@ var server = http.createServer(function (request, response) {
         console.log("StravaStatsHome invoked");
         console.log("query is ");
         console.log(parsedUrl.query);
-        performTokenExchange(parsedUrl.query.code);
-
-        filePath = "public" + "/StravaStatsHome.html";
-        var absPath = './' + filePath;
-        serveStatic(response, cache, absPath);
-
+        performTokenExchange(response, parsedUrl.query.code);
         return;
     }
     else if (parsedUrl.pathname == '/listAthleteActivities.html') {          // web service call
-        listAthleteActivities(response);
+        listAthleteActivities(response, parsedUrl.query.athleteId);
         return;
     }
     else if (parsedUrl.pathname == '/getDetailedActivity.html') {       // web service call
@@ -93,8 +88,10 @@ server.listen(8080, function () {
 });
 
 
+var authenticationData = {};
+
 // perform token exchange with Strava server
-function performTokenExchange(code) {
+function performTokenExchange(response, code) {
 
     console.log("Code is " + parsedUrl.query.code);
 
@@ -122,11 +119,10 @@ function performTokenExchange(code) {
     var str = ""
 
     var req = https.request(options, function (res) {
-        console.log('STATUS: ' + res.statusCode);
-        console.log('HEADERS: ' + JSON.stringify(res.headers));
+        //console.log('STATUS: ' + res.statusCode);
+        //console.log('HEADERS: ' + JSON.stringify(res.headers));
         res.setEncoding('utf8');
         res.on('data', function (chunk) {
-            //console.log('BODY: ' + chunk);
             console.log("data received");
             str += chunk;
         });
@@ -134,13 +130,37 @@ function performTokenExchange(code) {
             console.log("end received");
             console.log(str);
 
-            //data = JSON.parse(str);
+            data = JSON.parse(str);
 
-            //response.writeHead(
-            //    200,
-            //    { "content-type": 'application/json' }
-            //    );
-            //response.end(JSON.stringify(data, null, 3));
+            authenticationData = {};
+            authenticationData.accessToken = data.access_token;
+            authenticationData.athleteId = data.athlete.id;
+
+            console.log("the authentication data is");
+            console.log(authenticationData);
+
+            filePath = "public" + "/StravaStatsHome.html";
+            var absPath = './' + filePath;
+
+            fs.exists(absPath, function (exists) {
+                if (exists) {
+                    fs.readFile(absPath, function (err, data) {
+                        if (err) {
+                            send404(response);
+                        } else {
+                            // replace placeholder for athlete id with the real value
+                            console.log("search for data-athlete");
+                            var dataAsStr = String(data);
+                            //var finalDataAsStr = dataAsStr.replace("athleteIdPlaceholder", authenticationData.athleteId.toString());
+                            var finalDataAsStr = dataAsStr.replace("athleteIdPlaceholder", authenticationData.athleteId);
+                            sendFile(response, absPath, finalDataAsStr);
+                        }
+                    });
+                } else {
+                    send404(response);
+                }
+            });
+
         });
     });
 
@@ -240,9 +260,10 @@ function getDetailedActivity(response, activityId) {
 }
 
 // get a list of activities for the authenticated user
-function listAthleteActivities(response) {
+function listAthleteActivities(response, athleteId) {
 
     console.log('listAthleteActivities invoked');
+    console.log('athleteId=', athleteId);
 
     var options = {
         host: 'www.strava.com',
@@ -256,8 +277,8 @@ function listAthleteActivities(response) {
     var str = ""
 
     https.get(options, function (res) {
-        console.log('STATUS: ' + res.statusCode);
-        console.log('HEADERS: ' + JSON.stringify(res.headers));
+        //console.log('STATUS: ' + res.statusCode);
+        //console.log('HEADERS: ' + JSON.stringify(res.headers));
 
         res.on('data', function (d) {
             console.log("chunk received");

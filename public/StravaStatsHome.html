@@ -217,11 +217,17 @@
                 $('#SummaryActivities').show();
             }
 
+            // get athleteId
+            var athleteId = $('body').data('athleteid');
+            console.log("athleteId is ");
+            console.log(athleteId);
+
             // get summary activities for the current athlete
             $.ajax({
                 url: 'http://localHost:8080/listAthleteActivities.html',
                 type: 'GET',
                 dataType: 'json',
+                data: { "athleteId": athleteId.toString() },
                 error: function () { alert('Failed!'); },
             })
             .success(function (data, textStatus, jqXHR) {

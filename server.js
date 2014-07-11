@@ -66,8 +66,8 @@ db.query('SELECT 1 + 1 AS solution', function (err, rows, fields) {
 
 db.query(
   "CREATE TABLE IF NOT EXISTS authenticatedAthlete ("
-  + "athleteId INT(10) NOT NULL, "
-  + "authorizationKey LONGTEXT NOT NULL,"
+  + "athleteId VARCHAR(32) NOT NULL, "
+  + "authorizationKey VARCHAR(64) NOT NULL,"
   + "PRIMARY KEY(athleteId))",
   function (err) {
       if (err) throw err;
@@ -181,7 +181,7 @@ function performTokenExchange(response, code) {
               "WHERE athleteId=?";
             db.query(
               query,
-              [authenticationData.athleteId],
+              [authenticationData.athleteId.toString()],
               function (err, rows) {
                   if (err) throw err;
                   console.log("return from query - rows length = " + rows.length);
@@ -192,7 +192,7 @@ function performTokenExchange(response, code) {
                       db.query(
                         "INSERT INTO authenticatedathlete (athleteId, authorizationKey) " +
                         " VALUES (?, ?)",
-                        [authenticationData.athleteId, authenticationData.accessToken],
+                        [authenticationData.athleteId.toString(), authenticationData.accessToken],
                         function (err) {
                             if (err) throw err;
                             console.log("added authenticated athlete successfully");
@@ -334,6 +334,28 @@ function listAthleteActivities(response, athleteId) {
     console.log('listAthleteActivities invoked');
     console.log('athleteId=', athleteId);
     console.log("type of athleteId is " + typeof athleteId);
+
+    console.log("query for existing athlete entry");
+    var query = "SELECT * FROM authenticatedathlete " +
+      "WHERE athleteId=?";
+    db.query(
+      query,
+      [athleteId],
+      function (err, rows) {
+          if (err) throw err;
+          console.log("return from query - rows length = " + rows.length);
+
+          if (rows.length == 0) {
+              console.log("authentication data not found for this athlete");
+              // to do - redirect user back to connect page
+          }
+          else {
+              console.log("The following row was returned from the db");
+              console.log(rows[0]);
+              // todo? - check that the authenticationKey hasn't changed. If it has, update the db?
+          }
+      }
+    );
 
     var options = {
         host: 'www.strava.com',

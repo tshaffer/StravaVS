@@ -56,14 +56,6 @@ console.log("connect");
 
 db.connect();
 
-console.log('connected as id ' + db.threadId);
-
-db.query('SELECT 1 + 1 AS solution', function (err, rows, fields) {
-    if (err) throw err;
-
-    console.log('The solution is: ', rows[0].solution);
-});
-
 db.query(
   "CREATE TABLE IF NOT EXISTS authenticatedAthlete ("
   + "athleteId VARCHAR(32) NOT NULL, "
@@ -71,7 +63,29 @@ db.query(
   + "PRIMARY KEY(athleteId))",
   function (err) {
       if (err) throw err;
-      console.log("db query successful");
+      console.log("create authenticatedAthlete successful");
+      // note - should not proceed to createServer until this callback is executed
+  }
+);
+
+db.query(
+  "CREATE TABLE IF NOT EXISTS detailedActivity ("
+  + "activityId VARCHAR(32) NOT NULL, "
+  + "athleteId VARCHAR(32) NOT NULL, "
+  + "name VARCHAR(64) NOT NULL, "
+  + "description VARCHAR(256) NOT NULL, "
+  + "distance FLOAT NOT NULL, "
+  + "movingTime INT NOT NULL, "
+  + "elapsedTime INT NOT NULL, "
+  + "totalElevationGain INT NOT NULL, "
+  + "startDateTime DATE NOT NULL, "
+  + "averageSpeed FLOAT NOT NULL, "
+  + "maxSpeed FLOAT NOT NULL, "
+  + "calories INT NOT NULL, "
+  + "PRIMARY KEY(activityId))",
+  function (err) {
+      if (err) throw err;
+      console.log("create detailedActivity successful");
       // note - should not proceed to createServer until this callback is executed
   }
 );
@@ -330,6 +344,60 @@ function getDetailedActivity(response, activityId) {
     });
 }
 
+var activityIds = [];
+var detailedActivities = [];
+
+function getDetailedActivityData(activityId, accessToken) {
+    console.log("getDetailedActivityData invoked with activityId = " + activityId + ", accessToken = " + accessToken);
+
+    var options = {
+        host: 'www.strava.com',
+        path: '/api/v3/activities/' + activityId.toString(),
+        port: 443,
+        headers: {
+            'Authorization': 'Bearer ' + accessToken
+        }
+    };
+
+    console.log("almost complete url is " + options.host + options.path);
+
+    var str = ""
+
+    https.get(options, function (res) {
+        //console.log('STATUS: ' + res.statusCode);
+        //console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+        res.on('data', function (d) {
+            console.log("chunk received");
+            str += d;
+        });
+        res.on('end', function () {
+            console.log("end received");
+            //console.log(str);
+
+            detailedActivityData = JSON.parse(str);
+            detailedActivities.push(detailedActivityData);
+
+            var activity;
+
+            if (activityIds.length > 0) {
+                console.log("number of remaining activities is " + activityIds.length);
+                activityId = activityIds.shift();
+                console.log("grabbed next activityId");
+                console.log("current activity id is " + activityId);
+                //getDetailedActivityData(activityId, accessToken);
+            }
+            else {
+                // save all detailed activity data in the database
+
+            }
+        });
+
+    }).on('error', function () {
+        console.log('Caught exception: ' + err);
+    });
+
+}
 
 // get a list of activities for the authenticated user
 function listAthleteActivities(response, athleteId) {
@@ -372,6 +440,10 @@ function listAthleteActivities(response, athleteId) {
 
               var str = ""
 
+              activityIds = [];
+
+              // fetch up to date activity data from the server
+              // this data includes the summary activities for the authenticated athlete. however, we want to return the detailed activities for the authenticated athlete.
               https.get(options, function (res) {
                   //console.log('STATUS: ' + res.statusCode);
                   //console.log('HEADERS: ' + JSON.stringify(res.headers));
@@ -387,11 +459,36 @@ function listAthleteActivities(response, athleteId) {
                       activities = JSON.parse(str);
                       console.log(activities[0].id);
 
-                      response.writeHead(
-                          200,
-                          { "content-type": 'application/json' }
-                          );
-                      response.end(JSON.stringify(activities, null, 3));
+                      // need to return detailed activities. see if the corresponding detailed activities are in the db.
+                      // for each one that is not, fetch it from Strava and add it to the db. then return the data to the user
+
+                      // TODO - get detailed activities for the current athlete from the db
+
+                      // create a list of activity id's
+                      function saveActivity(activity, index, array) {
+                          console.log("save activity id " + activity.id);
+                          activityIds.push(activity.id);
+                      }
+                      activities.forEach(saveActivity);
+                      //$.each(activities, function (index, activity) {
+                      //    console.log("save activity id " + activity.id);
+                      //});
+
+                      var activity;
+
+                      if (activityIds.length > 0) {
+                          console.log("number of activities is " + activityIds.length);
+                          activityId = activityIds.shift();
+                          console.log("grabbed first activityId");
+                          console.log("initial activity id is " + activityId);
+                          getDetailedActivityData(activityId, authorizationKey);
+                      }
+
+                      //response.writeHead(
+                      //    200,
+                      //    { "content-type": 'application/json' }
+                      //    );
+                      //response.end(JSON.stringify(activities, null, 3));
                   });
 
               }).on('error', function () {

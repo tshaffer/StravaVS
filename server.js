@@ -152,6 +152,7 @@ function performTokenExchange(response, code) {
 
     var str = ""
 
+    // post token to Strava server; get back authentication key
     var req = https.request(options, function (res) {
         //console.log('STATUS: ' + res.statusCode);
         //console.log('HEADERS: ' + JSON.stringify(res.headers));
@@ -288,6 +289,7 @@ function getSegmentEffortsForAthlete(response, segmentId, athleteId) {
 // get detailed activity
 function getDetailedActivity(response, activityId) {
     console.log('getDetailedActivity invoked, id = ' + activityId);
+    console.log("authorizationKey = " + authorizationKey);
 
     var options = {
         host: 'www.strava.com',
@@ -328,6 +330,7 @@ function getDetailedActivity(response, activityId) {
     });
 }
 
+
 // get a list of activities for the authenticated user
 function listAthleteActivities(response, athleteId) {
 
@@ -350,49 +353,91 @@ function listAthleteActivities(response, athleteId) {
               // to do - redirect user back to connect page
           }
           else {
-              console.log("The following row was returned from the db");
-              console.log(rows[0]);
-              // todo? - check that the authenticationKey hasn't changed. If it has, update the db?
+              //console.log("The following row was returned from the db");
+              //console.log(rows[0]);
+
+              var authorizationKey = rows[0].authorizationKey;
+              console.log("retrieved authorizationKey " + authorizationKey);
+
+              // todo? - check that the authenticationKey hasn't changed from what is stored in the db. If it has, update the db?
+
+              var options = {
+                  host: 'www.strava.com',
+                  path: '/api/v3/athlete/activities',
+                  port: 443,
+                  headers: {
+                      'Authorization': 'Bearer ' + authorizationKey
+                  }
+              };
+
+              var str = ""
+
+              https.get(options, function (res) {
+                  //console.log('STATUS: ' + res.statusCode);
+                  //console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+                  res.on('data', function (d) {
+                      console.log("chunk received");
+                      str += d;
+                  });
+                  res.on('end', function () {
+                      console.log("end received");
+                      //console.log(str);
+
+                      activities = JSON.parse(str);
+                      console.log(activities[0].id);
+
+                      response.writeHead(
+                          200,
+                          { "content-type": 'application/json' }
+                          );
+                      response.end(JSON.stringify(activities, null, 3));
+                  });
+
+              }).on('error', function () {
+                  console.log('Caught exception: ' + err);
+              });
           }
       }
     );
 
-    var options = {
-        host: 'www.strava.com',
-        path: '/api/v3/athlete/activities',
-        port: 443,
-        headers: {
-            'Authorization': 'Bearer ' + 'fb8085cc4c7f3633533e875eae3dc1e04cef06e8'
-        }
-    };
+    // all this stuff needs to get done in the callback from the db query
+    //var options = {
+    //    host: 'www.strava.com',
+    //    path: '/api/v3/athlete/activities',
+    //    port: 443,
+    //    headers: {
+    //        'Authorization': 'Bearer ' + 'fb8085cc4c7f3633533e875eae3dc1e04cef06e8'
+    //    }
+    //};
 
-    var str = ""
+    //var str = ""
 
-    https.get(options, function (res) {
-        //console.log('STATUS: ' + res.statusCode);
-        //console.log('HEADERS: ' + JSON.stringify(res.headers));
+    //https.get(options, function (res) {
+    //    //console.log('STATUS: ' + res.statusCode);
+    //    //console.log('HEADERS: ' + JSON.stringify(res.headers));
 
-        res.on('data', function (d) {
-            console.log("chunk received");
-            str += d;
-        });
-        res.on('end', function () {
-            console.log("end received");
-            //console.log(str);
+    //    res.on('data', function (d) {
+    //        console.log("chunk received");
+    //        str += d;
+    //    });
+    //    res.on('end', function () {
+    //        console.log("end received");
+    //        //console.log(str);
 
-            activities = JSON.parse(str);
-            console.log(activities[0].id);
+    //        activities = JSON.parse(str);
+    //        console.log(activities[0].id);
 
-            response.writeHead(
-                200,
-                { "content-type": 'application/json' }
-                );
-            response.end(JSON.stringify(activities, null, 3));
-        });
+    //        response.writeHead(
+    //            200,
+    //            { "content-type": 'application/json' }
+    //            );
+    //        response.end(JSON.stringify(activities, null, 3));
+    //    });
 
-    }).on('error', function () {
-        console.log('Caught exception: ' + err);
-    });
+    //}).on('error', function () {
+    //    console.log('Caught exception: ' + err);
+    //});
 }
 
 //var server = http.createServer(function(request, response) {

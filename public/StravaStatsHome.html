@@ -178,29 +178,40 @@
 
             function buildActivityRow(activity) {
 
+                console.log("buildActivityRow invoked, activity is ");
+                console.log(activity);
+
+                // id
+                activityId = activity.activityId;
+
                 // ride date
-                d = new Date(activity.start_date_local);
+                //d = new Date(activity.start_date_local);
+                d = new Date(activity.startDateTime);
                 date = d.toDateString();
 
                 // distance
-                miles = activity.distance * 0.000621371;
+//                miles = activity.distance * 0.000621371;
+                miles = activity.distance;
 
                 // riding time
-                movingTime = getMovingTime(activity.moving_time);
+                //movingTime = getMovingTime(activity.moving_time);
+                movingTime = getMovingTime(activity.movingTime);
 
                 // elevation gain
-                elevationGain = activity.total_elevation_gain * 3.28084;
-                elevationGain = Math.floor(elevationGain);
+                //elevationGain = activity.total_elevation_gain * 3.28084;
+                //elevationGain = Math.floor(elevationGain);
+                elevationGain = activity.totalElevationGain;
 
                 // average speed (meters per second)
-                mph = activity.average_speed * 2.23694;
+                //mph = activity.average_speed * 2.23694;
+                mph = activity.averageSpeed;
 
-                rowToAdd = '<tr><td>' + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + "<input id='" + activity.id.toString() + "' type='submit' value='Show details'/>" + '</td></tr>';
+                rowToAdd = '<tr><td>' + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + "<input id='" + activityId + "' type='submit' value='Show details'/>" + '</td></tr>';
                 $('#myTable').append(rowToAdd);
 
                 // add button handler for this particular activity
-                btnId = "#" + activity.id.toString();
-                $(btnId).click({ id: activity.id.toString() }, showDetails);
+                btnId = "#" + activityId;
+                $(btnId).click({ id: activityId }, showDetails);
             }
 
             function buildActivitiesTable(activities) {

@@ -17,41 +17,6 @@ var accessToken;
 var detailedActivitiesToReturn = [];
 var fetchedActivities = [];
 
-function send404(response) {
-  response.writeHead(404, {'Content-Type': 'text/plain'});
-  response.write('Error 404: resource not found.');
-  response.end();
-}
-
-function sendFile(response, filePath, fileContents) {
-  response.writeHead(
-    200,
-    {"content-type": mime.lookup(path.basename(filePath))}
-  );
-  response.end(fileContents);
-}
-
-function serveStatic(response, cache, absPath) {
-    if (cache[absPath]) {
-        sendFile(response, absPath, cache[absPath]);
-    } else {
-        fs.exists(absPath, function(exists) {
-            if (exists) {
-                fs.readFile(absPath, function(err, data) {
-                    if (err) {
-                        send404(response);
-                    } else {
-                        //cache[absPath] = data;
-                        sendFile(response, absPath, data);
-                    }
-                });
-            } else {
-                send404(response);
-            }
-        });
-    }
-}
-
 function getMySqlDateTime(isoDateTime) {
     jsDateTime = new Date(isoDateTime);
     console.log("jsDateTime = " + jsDateTime);
@@ -68,125 +33,6 @@ function getMySqlDateTime(isoDateTime) {
         day = "0" + day;
     }
     return year + "-" + month + "-" + day;
-}
-
-// perform token exchange with Strava server
-function performTokenExchange(response, code) {
-
-    console.log("Code is " + parsedUrl.query.code);
-
-    code = parsedUrl.query.code;
-
-    postData = {}
-
-    postData.client_id = 2055;
-    postData.client_secret = "85f821429c9da1ef02b627058119a4253eafd16d";
-    postData.code = code;
-
-    var postDataStr = JSON.stringify(postData);
-
-    var options = {
-        hostname: 'www.strava.com',
-        port: 443,
-        path: '/oauth/token',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json; charset=utf-8',
-            'Content-Length': postDataStr.length
-        }
-    };
-
-    var str = ""
-
-    // post token to Strava server; get back authentication key
-    var req = https.request(options, function (res) {
-        //console.log('STATUS: ' + res.statusCode);
-        //console.log('HEADERS: ' + JSON.stringify(res.headers));
-        res.setEncoding('utf8');
-        res.on('data', function (chunk) {
-            console.log("data received");
-            str += chunk;
-        });
-        res.on('end', function () {
-            console.log("end received");
-            console.log(str);
-
-            data = JSON.parse(str);
-
-            authenticationData = {};
-            authenticationData.accessToken = data.access_token;
-            authenticationData.athleteId = data.athlete.id;
-
-            console.log("the authentication data is");
-            console.log(authenticationData);
-
-            // add the authentication data to the data base if it's not already there
-
-            // is the athlete already in the database?
-            console.log("query for existing athlete entry");
-            var query = "SELECT * FROM authenticatedathlete " +
-              "WHERE athleteId=?";
-            db.query(
-              query,
-              [authenticationData.athleteId.toString()],
-              function (err, rows) {
-                  if (err) throw err;
-                  console.log("return from query - rows length = " + rows.length);
-
-                  if (rows.length == 0) {
-                      console.log("add authentication data to the db");
-
-                      db.query(
-                        "INSERT INTO authenticatedathlete (athleteId, authorizationKey) " +
-                        " VALUES (?, ?)",
-                        [authenticationData.athleteId.toString(), authenticationData.accessToken],
-                        function (err) {
-                            if (err) throw err;
-                            console.log("added authenticated athlete successfully");
-                            // in theory, shouldn't necessarily execute steps below until this callback is executed
-                        }
-                      );
-                  }
-                  else {
-                      console.log("The following row was returned from the db");
-                      console.log(rows[0]);
-                      // todo? - check that the authenticationKey hasn't changed. If it has, update the db?
-                  }
-              }
-            );
-
-
-            filePath = "public" + "/StravaStatsHome.html";
-            var absPath = './' + filePath;
-
-            fs.exists(absPath, function (exists) {
-                if (exists) {
-                    fs.readFile(absPath, function (err, data) {
-                        if (err) {
-                            send404(response);
-                        } else {
-                            // replace placeholder for athlete id with the real value
-                            console.log("search for data-athlete");
-                            var dataAsStr = String(data);
-                            var finalDataAsStr = dataAsStr.replace("athleteIdPlaceholder", authenticationData.athleteId);
-                            sendFile(response, absPath, finalDataAsStr);
-                        }
-                    });
-                } else {
-                    send404(response);
-                }
-            });
-
-        });
-    });
-
-    req.on('error', function (e) {
-        console.log('problem with request: ' + e.message);
-    });
-
-    // write data to request body
-    req.write(postDataStr);
-    req.end();
 }
 
 // get segment efforts for a friend
@@ -502,7 +348,6 @@ function listAthleteActivities(response, athleteId) {
 
     console.log('listAthleteActivities invoked');
     console.log('athleteId=', athleteId);
-    console.log("type of athleteId is " + typeof athleteId);
 
     console.log("query for existing athlete entry");
     var query = "SELECT * FROM authenticatedathlete " +
@@ -560,8 +405,6 @@ function listAthleteActivities(response, athleteId) {
                       // need to return detailed activities. see if the corresponding detailed activities are in the db.
                       // for each one that is not, fetch it from Strava and add it to the db. then return the data to the user
 
-                      // TODO - get detailed activities for the current athlete from the db
-
                       // create a list of activity id's retrieved from Strava server
                       function saveActivity(activity, index, array) {
                           serverActivityIds.push(activity.id);
@@ -580,6 +423,161 @@ function listAthleteActivities(response, athleteId) {
     );
 }
 
+// perform token exchange with Strava server
+function performTokenExchange(response, code) {
+
+    console.log("Code is " + parsedUrl.query.code);
+
+    code = parsedUrl.query.code;
+
+    postData = {}
+
+    postData.client_id = 2055;
+    postData.client_secret = "85f821429c9da1ef02b627058119a4253eafd16d";
+    postData.code = code;
+
+    var postDataStr = JSON.stringify(postData);
+
+    var options = {
+        hostname: 'www.strava.com',
+        port: 443,
+        path: '/oauth/token',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Content-Length': postDataStr.length
+        }
+    };
+
+    var str = ""
+
+    // post token to Strava server; get back access token
+    var req = https.request(options, function (res) {
+        //console.log('STATUS: ' + res.statusCode);
+        //console.log('HEADERS: ' + JSON.stringify(res.headers));
+        res.setEncoding('utf8');
+        res.on('data', function (chunk) {
+            console.log("data received");
+            str += chunk;
+        });
+        res.on('end', function () {
+            console.log("end received");
+            console.log(str);
+
+            data = JSON.parse(str);
+
+            authenticationData = {};
+            authenticationData.accessToken = data.access_token;
+            authenticationData.athleteId = data.athlete.id;
+
+            console.log("the authentication data is");
+            console.log(authenticationData);
+
+            // add the authentication data to the data base if it's not already there
+
+            // is the athlete already in the database?
+            console.log("query for existing athlete entry");
+            var query = "SELECT * FROM authenticatedathlete " +
+              "WHERE athleteId=?";
+            db.query(
+              query,
+              [authenticationData.athleteId.toString()],
+              function (err, rows) {
+                  if (err) throw err;
+                  console.log("return from query - rows length = " + rows.length);
+
+                  if (rows.length == 0) {
+                      console.log("add authentication data to the db");
+
+                      db.query(
+                        "INSERT INTO authenticatedathlete (athleteId, authorizationKey) " +
+                        " VALUES (?, ?)",
+                        [authenticationData.athleteId.toString(), authenticationData.accessToken],
+                        function (err) {
+                            if (err) throw err;
+                            console.log("added authenticated athlete successfully");
+                            // in theory, shouldn't necessarily execute steps below until this callback is executed
+                        }
+                      );
+                  }
+                  else {
+                      console.log("The following row was returned from the db");
+                      console.log(rows[0]);
+                      // todo? - check that the authenticationKey hasn't changed. If it has, update the db?
+                  }
+              }
+            );
+
+
+            filePath = "public" + "/StravaStatsHome.html";
+            var absPath = './' + filePath;
+
+            fs.exists(absPath, function (exists) {
+                if (exists) {
+                    fs.readFile(absPath, function (err, data) {
+                        if (err) {
+                            send404(response);
+                        } else {
+                            // replace placeholder for athlete id with the real value
+                            console.log("search for data-athlete");
+                            var dataAsStr = String(data);
+                            var finalDataAsStr = dataAsStr.replace("athleteIdPlaceholder", authenticationData.athleteId);
+                            sendFile(response, absPath, finalDataAsStr);
+                        }
+                    });
+                } else {
+                    send404(response);
+                }
+            });
+
+        });
+    });
+
+    req.on('error', function (e) {
+        console.log('problem with request: ' + e.message);
+    });
+
+    // write data to request body
+    req.write(postDataStr);
+    req.end();
+}
+
+function send404(response) {
+    response.writeHead(404, { 'Content-Type': 'text/plain' });
+    response.write('Error 404: resource not found.');
+    response.end();
+}
+
+function sendFile(response, filePath, fileContents) {
+    response.writeHead(
+      200,
+      { "content-type": mime.lookup(path.basename(filePath)) }
+    );
+    response.end(fileContents);
+}
+
+function serveStatic(response, cache, absPath) {
+    if (cache[absPath]) {
+        sendFile(response, absPath, cache[absPath]);
+    } else {
+        fs.exists(absPath, function (exists) {
+            if (exists) {
+                fs.readFile(absPath, function (err, data) {
+                    if (err) {
+                        send404(response);
+                    } else {
+                        //cache[absPath] = data;
+                        sendFile(response, absPath, data);
+                    }
+                });
+            } else {
+                send404(response);
+            }
+        });
+    }
+}
+
+console.log('begin execution');
 console.log('create connection');
 
 var db = mysql.createConnection({
@@ -651,7 +649,7 @@ var server = http.createServer(function (request, response) {
     console.log(parsedUrl.pathname);
     console.log(parsedUrl.query);
 
-    if (parsedUrl.pathname == '/StravaStatsHome.html') {                  // part of authentication
+    if (parsedUrl.pathname == '/StravaStatsHome.html') {                  // complete authentication
         console.log("StravaStatsHome invoked");
         console.log("query is ");
         console.log(parsedUrl.query);

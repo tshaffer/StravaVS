@@ -206,7 +206,9 @@
                 //mph = activity.average_speed * 2.23694;
                 mph = activity.averageSpeed;
 
-                rowToAdd = '<tr><td>' + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + "<input id='" + activityId + "' type='submit' value='Show details'/>" + '</td></tr>';
+                calories = activity.calories;
+
+                rowToAdd = '<tr><td>' + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + calories + '</td><td>' + "<input id='" + activityId + "' type='submit' value='Show details'/>" + '</td></tr>';
                 $('#myTable').append(rowToAdd);
 
                 // add button handler for this particular activity
@@ -279,12 +281,13 @@
     <p>My Strava Data</p>
 
     <div id="SummaryActivities">
-        <table style="width:795px" id="myTable">
+        <table style="width:875px" id="myTable">
             <col style="width:130px">
             <col style="width:200px">
             <col style="width:100px">
             <col style="width:65px">
             <col style="width:65px">
+            <col style="width:80px">
             <col style="width:80px">
             <col style="width:80px">
         <tr>
@@ -294,6 +297,7 @@
             <th>Distance</th>
             <th>Elevation</th>
             <th>Average Speed</th>
+            <th>Calories</th>
             <th></th>
         </tr>
 

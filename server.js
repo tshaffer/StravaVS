@@ -90,6 +90,22 @@ db.query(
   }
 );
 
+db.query(
+  "CREATE TABLE IF NOT EXISTS segmenteffort ("
+  + "segmentEffortId VARCHAR(32) NOT NULL, "
+  + "name VARCHAR(128) NOT NULL, "
+  + "movingTime INT NOT NULL, "
+  + "elapsedTime INT NOT NULL, "
+  + "startDateTime DATE NOT NULL, "
+  + "distance FLOAT NOT NULL, "
+  + "PRIMARY KEY(segmentEffortId))",
+  function (err) {
+      if (err) throw err;
+      console.log("create segmenteffort successful");
+      // note - should not proceed to createServer until this callback is executed
+  }
+);
+
 var server = http.createServer(function (request, response) {
     var filePath = false;
 
@@ -346,8 +362,119 @@ function getDetailedActivity(response, activityId) {
 
 var activityIds = [];
 var detailedActivities = [];
+var segmentEfforts = [];
 
-function getDetailedActivityData(activityId, accessToken) {
+function getMySqlDateTime(isoDateTime) {
+    jsDateTime = new Date(isoDateTime);
+    console.log("jsDateTime = " + jsDateTime);
+
+    // date conversion
+    var year, month, day;
+    year = String(jsDateTime.getFullYear());
+    month = String(jsDateTime.getMonth() + 1);
+    if (month.length == 1) {
+        month = "0" + month;
+    }
+    day = String(jsDateTime.getDate());
+    if (day.length == 1) {
+        day = "0" + day;
+    }
+    return year + "-" + month + "-" + day;
+}
+
+function addDetailedActivityToDB(detailedActivity) {
+
+    activityId = detailedActivity.id.toString();
+    athleteId = detailedActivity.athlete.id.toString();
+    name = detailedActivity.name;
+    description = detailedActivity.description;
+    distance = detailedActivity.distance * 0.000621371;
+    movingTime = detailedActivity.moving_time;
+    elapsedTime = detailedActivity.elapsed_time;
+    totalElevationGain = Math.floor(detailedActivity.total_elevation_gain * 3.28084);
+    averageSpeed = detailedActivity.average_speed * 2.23694;
+    maxSpeed = detailedActivity.max_speed * 2.23694;
+    calories = detailedActivity.calories;
+    startDateTime = getMySqlDateTime(detailedActivity.start_date_local);
+    console.log("mySql datetime = " + startDateTime);
+
+    db.query(
+      "INSERT INTO detailedactivity (activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories) " +
+      " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories],
+      function (err) {
+          if (err) throw err;
+          console.log("added detailed activity successfully");
+
+          // get segment efforts for this detailed activity
+          // create a list of segmentEfforts
+          segmentEfforts = [];
+          function saveSegmentEffort(segmentEffort, index, array) {
+              console.log("save segmentEffort whose id is " + segmentEffort.id);
+              segmentEfforts.push(segmentEffort);
+          }
+          detailedActivity.segment_efforts.forEach(saveSegmentEffort);
+
+          // add segment efforts to the db
+          if (segmentEfforts.length > 0) {
+              console.log("number of segmentEfforts is " + segmentEfforts.length);
+              segmentEffort = segmentEfforts.shift();
+              console.log("grabbed first segmentEffort");
+              console.log("initial segmentEffort Id is " + segmentEffort.id);
+              addSegmentEffortToDB(segmentEffort);
+          }
+          else {
+          }
+      }
+    );
+}
+
+function addSegmentEffortToDB(segmentEffort) {
+    segmentEffortId = segmentEffort.id.toString();
+    name = segmentEffort.name;
+    movingTime = segmentEffort.moving_time;
+    elapsedTime = segmentEffort.elapsed_time;
+    startDateTime = getMySqlDateTime(segmentEffort.start_date_local);
+    distance = segmentEffort.distance * 0.000621371;
+
+    db.query(
+      "INSERT INTO segmenteffort (segmentEffortId, name, movingTime, elapsedTime, startDateTime, distance) " +
+      " VALUES (?, ?, ?, ?, ?, ?)",
+      [segmentEffortId, name, movingTime, elapsedTime, startDateTime, distance],
+      function (err) {
+          if (err) throw err;
+          console.log("added detailed activity successfully");
+
+          // add next segment effort
+          if (segmentEfforts.length > 0) {
+              console.log("number of segmentEfforts is " + segmentEfforts.length);
+              segmentEffort = segmentEfforts.shift();
+              console.log("grabbed next segmentEffort");
+              console.log("next segmentEffort Id is " + segmentEffort.id);
+              addSegmentEffortToDB(segmentEffort);
+          }
+          else {
+              // add next detailed activity to db
+              if (detailedActivities.length > 0) {
+                  console.log("number of remaining detailedActivities is " + detailedActivities.length);
+                  detailedActivity = detailedActivities.shift();
+                  addDetailedActivityToDB(detailedActivity);
+              }
+          }
+      }
+    );
+
+}
+
+function addDetailedActivitiesToDB() {
+    if (detailedActivities.length > 0) {
+        console.log("number of remaining detailedActivities is " + detailedActivities.length);
+        detailedActivity = detailedActivities.shift();
+        addDetailedActivityToDB(detailedActivity);
+    }
+}
+
+function getDetailedActivityData(activityId) {
     console.log("getDetailedActivityData invoked with activityId = " + activityId + ", accessToken = " + accessToken);
 
     var options = {
@@ -385,12 +512,16 @@ function getDetailedActivityData(activityId, accessToken) {
                 activityId = activityIds.shift();
                 console.log("grabbed next activityId");
                 console.log("current activity id is " + activityId);
-                //getDetailedActivityData(activityId, accessToken);
+                getDetailedActivityData(activityId);
             }
             else {
                 // save all detailed activity data in the database
-
+                addDetailedActivitiesToDB();
             }
+
+            // just doing one for now
+            addDetailedActivitiesToDB();
+
         });
 
     }).on('error', function () {
@@ -398,6 +529,8 @@ function getDetailedActivityData(activityId, accessToken) {
     });
 
 }
+
+var accessToken;
 
 // get a list of activities for the authenticated user
 function listAthleteActivities(response, athleteId) {
@@ -424,8 +557,8 @@ function listAthleteActivities(response, athleteId) {
               //console.log("The following row was returned from the db");
               //console.log(rows[0]);
 
-              var authorizationKey = rows[0].authorizationKey;
-              console.log("retrieved authorizationKey " + authorizationKey);
+              accessToken = rows[0].authorizationKey;
+              console.log("retrieved accessToken " + accessToken);
 
               // todo? - check that the authenticationKey hasn't changed from what is stored in the db. If it has, update the db?
 
@@ -434,7 +567,7 @@ function listAthleteActivities(response, athleteId) {
                   path: '/api/v3/athlete/activities',
                   port: 443,
                   headers: {
-                      'Authorization': 'Bearer ' + authorizationKey
+                      'Authorization': 'Bearer ' + accessToken
                   }
               };
 
@@ -481,7 +614,7 @@ function listAthleteActivities(response, athleteId) {
                           activityId = activityIds.shift();
                           console.log("grabbed first activityId");
                           console.log("initial activity id is " + activityId);
-                          getDetailedActivityData(activityId, authorizationKey);
+                          getDetailedActivityData(activityId);
                       }
 
                       //response.writeHead(

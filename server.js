@@ -341,6 +341,106 @@ function sendActivitiesResponse() {
 
 var activitiesResponse;
 
+function listAthleteActivitiesNew(response, athleteId) {
+
+    console.log('listAthleteActivities invoked');
+    console.log('athleteId=', athleteId);
+
+    console.log("query for existing athlete entry");
+    var query = "SELECT * FROM authenticatedathlete " +
+      "WHERE athleteId=?";
+    db.query(
+      query,
+      [athleteId],
+      function (err, rows) {
+          if (err) throw err;
+          console.log("return from query - rows length = " + rows.length);
+
+          if (rows.length == 0) {
+              console.log("authentication data not found for this athlete");
+              // to do - redirect user back to connect page
+          }
+          else {
+              //console.log("The following row was returned from the db");
+              //console.log(rows[0]);
+
+              var accessToken = rows[0].authorizationKey;
+              console.log("retrieved accessToken " + accessToken);
+
+
+              var options = {
+                  host: 'www.strava.com',
+                  path: '/api/v3/athlete/activities',
+                  port: 443,
+                  headers: {
+                      'Authorization': 'Bearer ' + accessToken
+                  }
+              };
+
+              var activitiesStr = ""
+
+              https.get(options, function (res) {
+
+                  res.on('data', function (d) {
+                      console.log("chunk received");
+                      activitiesStr += d;
+                  });
+                  res.on('end', function () {
+                      console.log("end received");
+
+                      var activities = JSON.parse(activitiesStr);
+                      var athleteDetailedActivities = [];
+
+                      // create a list of activity id's retrieved from Strava server
+                      function fetchActivity(activity, index, array) {
+
+                          console.log("fetchActivity invoked with id = " + activity.id + ", accessToken = " + accessToken);
+
+                          var options = {
+                              host: 'www.strava.com',
+                              path: '/api/v3/activities/' + activity.id.toString(),
+                              port: 443,
+                              headers: {
+                                  'Authorization': 'Bearer ' + accessToken
+                              }
+                          };
+
+                          var detailedActivityStr = ""
+
+                          https.get(options, function (res) {
+                              //console.log('STATUS: ' + res.statusCode);
+                              //console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+                              res.on('data', function (d) {
+                                  console.log("chunk received for activity id = " + activity.id);
+                                  detailedActivityStr += d;
+                              });
+                              res.on('end', function () {
+                                  console.log("end received for activity id = " + activity.id);
+                                  //console.log(str);
+
+                                  var myDetailedActivityData = JSON.parse(detailedActivityStr);
+                                  athleteDetailedActivities.push(myDetailedActivityData);
+                              });
+
+                          }).on('error', function () {
+                              console.log('Caught exception: ' + err);
+                          });
+                      }
+                      activities.forEach(fetchActivity);
+
+                      // compare to list of activities in the database for the current athlete
+                  });
+
+              }).on('error', function () {
+                  console.log('Caught exception: ' + err);
+              });
+
+          }
+      }
+    );
+}
+
 // get a list of activities for the authenticated user
 function listAthleteActivities(response, athleteId) {
 
@@ -657,7 +757,8 @@ var server = http.createServer(function (request, response) {
         return;
     }
     else if (parsedUrl.pathname == '/listAthleteActivities.html') {          // web service call
-        listAthleteActivities(response, parsedUrl.query.athleteId);
+        //listAthleteActivities(response, parsedUrl.query.athleteId);
+        listAthleteActivitiesNew(response, parsedUrl.query.athleteId);
         return;
     }
     else if (parsedUrl.pathname == '/getDetailedActivity.html') {       // web service call

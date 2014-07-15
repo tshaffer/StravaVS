@@ -14,7 +14,7 @@ var detailedActivities = [];
 var segmentEfforts = [];
 var accessToken;
 
-var detailedActivitiesToReturn = [];
+//var detailedActivitiesToReturn = [];
 var fetchedActivities = [];
 
 function getMySqlDateTime(isoDateTime) {
@@ -165,53 +165,53 @@ function addSegmentEffortToDB(segmentEffort) {
     );
 }
 
-function addDetailedActivityToDB(detailedActivity) {
+//function addDetailedActivityToDB(detailedActivity) {
 
-    activityId = detailedActivity.id.toString();
-    athleteId = detailedActivity.athlete.id.toString();
-    name = detailedActivity.name;
-    description = detailedActivity.description;
-    distance = detailedActivity.distance * 0.000621371;
-    movingTime = detailedActivity.moving_time;
-    elapsedTime = detailedActivity.elapsed_time;
-    totalElevationGain = Math.floor(detailedActivity.total_elevation_gain * 3.28084);
-    averageSpeed = detailedActivity.average_speed * 2.23694;
-    maxSpeed = detailedActivity.max_speed * 2.23694;
-    calories = detailedActivity.calories;
-    startDateTime = getMySqlDateTime(detailedActivity.start_date_local);
-    console.log("mySql datetime = " + startDateTime);
+//    activityId = detailedActivity.id.toString();
+//    athleteId = detailedActivity.athlete.id.toString();
+//    name = detailedActivity.name;
+//    description = detailedActivity.description;
+//    distance = detailedActivity.distance * 0.000621371;
+//    movingTime = detailedActivity.moving_time;
+//    elapsedTime = detailedActivity.elapsed_time;
+//    totalElevationGain = Math.floor(detailedActivity.total_elevation_gain * 3.28084);
+//    averageSpeed = detailedActivity.average_speed * 2.23694;
+//    maxSpeed = detailedActivity.max_speed * 2.23694;
+//    calories = detailedActivity.calories;
+//    startDateTime = getMySqlDateTime(detailedActivity.start_date_local);
+//    console.log("mySql datetime = " + startDateTime);
 
-    db.query(
-      "INSERT INTO detailedactivity (activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories) " +
-      " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories],
-      function (err) {
-          if (err) throw err;
-          console.log("added detailed activity successfully");
+//    db.query(
+//      "INSERT INTO detailedactivity (activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories) " +
+//      " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+//      [activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories],
+//      function (err) {
+//          if (err) throw err;
+//          console.log("added detailed activity successfully");
 
-          // get segment efforts for this detailed activity
-          // create a list of segmentEfforts
-          segmentEfforts = [];
-          function saveSegmentEffort(segmentEffort, index, array) {
-              console.log("save segmentEffort whose id is " + segmentEffort.id);
-              segmentEfforts.push(segmentEffort);
-          }
-          detailedActivity.segment_efforts.forEach(saveSegmentEffort);
+//          // get segment efforts for this detailed activity
+//          // create a list of segmentEfforts
+//          segmentEfforts = [];
+//          function saveSegmentEffort(segmentEffort, index, array) {
+//              console.log("save segmentEffort whose id is " + segmentEffort.id);
+//              segmentEfforts.push(segmentEffort);
+//          }
+//          detailedActivity.segment_efforts.forEach(saveSegmentEffort);
 
-          // add segment efforts to the db
-          if (segmentEfforts.length > 0) {
-              console.log("number of segmentEfforts is " + segmentEfforts.length);
-              segmentEffort = segmentEfforts.shift();
-              console.log("grabbed first segmentEffort");
-              console.log("initial segmentEffort Id is " + segmentEffort.id);
-              addSegmentEffortToDB(segmentEffort);
-          }
-          else {
-              sendActivitiesResponse();
-          }
-      }
-    );
-}
+//          // add segment efforts to the db
+//          if (segmentEfforts.length > 0) {
+//              console.log("number of segmentEfforts is " + segmentEfforts.length);
+//              segmentEffort = segmentEfforts.shift();
+//              console.log("grabbed first segmentEffort");
+//              console.log("initial segmentEffort Id is " + segmentEffort.id);
+//              addSegmentEffortToDB(segmentEffort);
+//          }
+//          else {
+//              sendActivitiesResponse();
+//          }
+//      }
+//    );
+//}
 
 function addDetailedActivitiesToDB() {
 
@@ -330,15 +330,6 @@ function getDetailedActivities(athleteId, serverActivityIds) {
     );
 }
 
-function sendActivitiesResponse() {
-    activitiesResponse.writeHead(
-    200,
-    { "content-type": 'application/json' }
-    );
-    activitiesResponse.end(JSON.stringify(detailedActivitiesToReturn, null, 3));
-
-}
-
 var activitiesResponse;
 
 function getAuthenticatedAthlete(responseData, nextFunction) {
@@ -373,6 +364,25 @@ function getAuthenticatedAthlete(responseData, nextFunction) {
           }
       }
     );
+}
+
+function convertDetailedActivity(detailedActivity) {
+
+    convertedActivity = {};
+    convertedActivity.activityId = detailedActivity.id.toString();
+    convertedActivity.athleteId = detailedActivity.athlete.id.toString();
+    convertedActivity.name = detailedActivity.name;
+    convertedActivity.description = detailedActivity.description;
+    convertedActivity.distance = detailedActivity.distance * 0.000621371;
+    convertedActivity.movingTime = detailedActivity.moving_time;
+    convertedActivity.elapsedTime = detailedActivity.elapsed_time;
+    convertedActivity.totalElevationGain = Math.floor(detailedActivity.total_elevation_gain * 3.28084);
+    convertedActivity.averageSpeed = detailedActivity.average_speed * 2.23694;
+    convertedActivity.maxSpeed = detailedActivity.max_speed * 2.23694;
+    convertedActivity.calories = detailedActivity.calories;
+    convertedActivity.startDateTime = getMySqlDateTime(detailedActivity.start_date_local);
+    return convertedActivity;
+
 }
 
 function addDetailedActivityToDB(detailedActivity) {
@@ -498,6 +508,10 @@ function fetchDetailedActivitiesFromStrava(responseData, detailedActivityIdsToFe
                 detailedActivityData = JSON.parse(str);
                 console.log(detailedActivityData);
 
+                // might not be in the right format
+                convertedActivity = convertDetailedActivity(detailedActivityData);
+                responseData.detailedActivitiesToReturn.push(convertedActivity);
+
                 // retrieve segment effort ids (and segment id's?) from detailed activity
 
                 // add detailed activity to the database
@@ -505,6 +519,7 @@ function fetchDetailedActivitiesFromStrava(responseData, detailedActivityIdsToFe
 
                 if (idsOfActivitiesFetchedFromStrava.length == Object.keys(detailedActivityIdsToFetchFromServer).length) {
                     console.log("all detailed activities fetched from strava");
+                    sendActivitiesResponse(responseData.serverResponse, responseData.detailedActivitiesToReturn);
                     return;
                 }
             });
@@ -520,65 +535,65 @@ function getDetailedActivitiesInDB(responseData, summaryActivitiesFromStrava) {
 
     console.log("getDetailedActivitiesInDB invoked");
 
-    var completedQueries = [];
     var detailedActivitiesInDB = {};
 
-    summaryActivitiesFromStrava.forEach(getActivityFromDB);
+    var queryWhere = "WHERE activityId in (";
+    var activityIds = [];
 
-    function getActivityFromDB(activity, index, array) {
+    var ch = '';
+    summaryActivitiesFromStrava.forEach(buildQuery);
 
-        var query = "SELECT * FROM detailedactivity " +
-                "WHERE activityId=?";
-        console.log("get detailed activity from db for activityId = " + activity.id.toString());
+    function buildQuery(activity, index, array) {
 
-        db.query(
-          query,
-          [activity.id.toString()],
-          function (err, rows) {
+        queryWhere += ch + "?";
+        ch = ',';
 
-              if (err) throw err;
+        activityIds.push(activity.id.toString());
+    };
+    queryWhere += ")";
 
-              completedQueries.push(activity.id);
+    console.log(queryWhere);
+    console.log(activityIds);
 
-              console.log("return from query for activityId = " + activity.id.toString() + "- rows length = " + rows.length);
+    var query = "SELECT * FROM detailedactivity " + queryWhere;
 
-              if (rows.length == 0) {
-                  console.log("no activity found in the db for this activity id");
-                  // get activities from Strava server??
-              }
-              else {
-                  detailedActivitiesInDB[rows[0].activityId] = rows[0].activityId;
-              }
+    db.query(
+      query,
+      activityIds,
+      function (err, rows) {
 
-              // check to see if all queries are complete
-              if (completedQueries.length == summaryActivitiesFromStrava.length) {
-                  console.log("All queries complete");
+        if (err) throw err;
 
-                  // create a list of all summary activities that came from the server - we'll fetch detailed versions of a subset of these from the server
-                  var detailedActivitiesToFetchFromServer = {};
-                  for (i = 0; i < summaryActivitiesFromStrava.length; i++) {
-                      detailedActivitiesToFetchFromServer[summaryActivitiesFromStrava[i].id] = summaryActivitiesFromStrava[i].id;
-                  }
+        console.log("num rows = " + rows.length);
 
-                  // remove those items from the list that are already in the database
-                  for (var key in detailedActivitiesToFetchFromServer) {
-                      if (detailedActivitiesInDB.hasOwnProperty(key)) {
-                          delete detailedActivitiesToFetchFromServer[key];
-                      }
-                  }
+        // store the activity id's of those activities found in the database
+        for (var i in rows) {
+            detailedActivitiesInDB[rows[i].activityId] = rows[i].activityId;
+        }
 
-                  // the remaining items in detailedActivitiesToFetchFromServer need to be fetched from the strava server (as detailed activities)
-                  fetchDetailedActivitiesFromStrava(responseData, detailedActivitiesToFetchFromServer);
+        // create a list of all summary activities that came from the server - we'll fetch detailed versions of a subset of these from the server
+        var detailedActivitiesToFetchFromServer = {};
+        //for (i = 0; i < summaryActivitiesFromStrava.length; i++) {
+        for (var i in summaryActivitiesFromStrava) {
+            detailedActivitiesToFetchFromServer[summaryActivitiesFromStrava[i].id] = summaryActivitiesFromStrava[i].id;
+        }
 
-                  // the remaining items in summaryActivitiesToStoreInDB need to get added to the database
-                  //console.log("number of items to store in db = " + Object.keys(summaryActivitiesToStoreInDB).length);
-                  //console.log(summaryActivitiesToStoreInDB);
+        // remove those items from the list that are already in the database
+        for (var key in detailedActivitiesToFetchFromServer) {
+            if (detailedActivitiesInDB.hasOwnProperty(key)) {
+                delete detailedActivitiesToFetchFromServer[key];
+            }
+        }
+        
+        // the response we send back should include all the detailed activities retrieved from the db
+        responseData.detailedActivitiesToReturn = [];
+        for (var i in rows) {
+            responseData.detailedActivitiesToReturn.push(rows[i]);
+        }
 
-                  //addSummaryActivitiesToDB(responseData, summaryActivitiesFromStrava, summaryActivitiesToStoreInDB);
-              }
-          }
-        );
-    }
+        // the remaining items in detailedActivitiesToFetchFromServer need to be fetched from the strava server (as detailed activities)
+        fetchDetailedActivitiesFromStrava(responseData, detailedActivitiesToFetchFromServer);
+      });
 }
 
 function getSummaryActivitiesFromStrava(responseData) {
@@ -962,6 +977,15 @@ function serveStatic(response, cache, absPath) {
         });
     }
 }
+
+function sendActivitiesResponse(response, activitiesAsJson) {
+    response.writeHead(
+    200,
+    { "content-type": 'application/json' }
+    );
+    response.end(JSON.stringify(activitiesAsJson, null, 3));
+}
+
 
 var globalCounter = 0;
 var requestCounter = 0;

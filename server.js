@@ -454,7 +454,7 @@ function fetchDetailedActivity(activityId) {
 
             // convert string from server into JSON object
             detailedActivityData = JSON.parse(str);
-            console.log(detailedActivityData);
+            //console.log(detailedActivityData);
 
             // retrieve segment effort ids (and segment id's?) from detailed activity
 
@@ -506,7 +506,8 @@ function fetchDetailedActivitiesFromStrava(responseData, detailedActivityIdsToFe
 
                 // convert string from server into JSON object
                 detailedActivityData = JSON.parse(str);
-                console.log(detailedActivityData);
+                str = "";
+                //console.log(detailedActivityData);
 
                 // might not be in the right format
                 convertedActivity = convertDetailedActivity(detailedActivityData);
@@ -517,6 +518,7 @@ function fetchDetailedActivitiesFromStrava(responseData, detailedActivityIdsToFe
                 // add detailed activity to the database
                 // add segment effort ids (and segment id's?) to the db
 
+                console.log("check for completion");
                 if (idsOfActivitiesFetchedFromStrava.length == Object.keys(detailedActivityIdsToFetchFromServer).length) {
                     console.log("all detailed activities fetched from strava");
                     sendActivitiesResponse(responseData.serverResponse, responseData.detailedActivitiesToReturn);

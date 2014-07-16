@@ -575,9 +575,6 @@ function getDetailedActivitiesInDB(responseData, summaryActivitiesFromStrava) {
     };
     queryWhere += ")";
 
-    console.log(queryWhere);
-    console.log(activityIds);
-
     var query = "SELECT * FROM detailedactivity " + queryWhere;
 
     db.query(
@@ -614,8 +611,14 @@ function getDetailedActivitiesInDB(responseData, summaryActivitiesFromStrava) {
             responseData.detailedActivitiesToReturn.push(rows[i]);
         }
 
-        // the remaining items in detailedActivitiesToFetchFromServer need to be fetched from the strava server (as detailed activities)
-        fetchDetailedActivitiesFromStrava(responseData, detailedActivitiesToFetchFromServer);
+          // the remaining items in detailedActivitiesToFetchFromServer need to be fetched from the strava server (as detailed activities)
+          // if there are none, send the response now
+        if (Object.keys(detailedActivitiesToFetchFromServer).length == 0) {
+            sendActivitiesResponse(responseData.serverResponse, responseData.detailedActivitiesToReturn);
+        }
+        else {
+            fetchDetailedActivitiesFromStrava(responseData, detailedActivitiesToFetchFromServer);
+        }
       });
 }
 

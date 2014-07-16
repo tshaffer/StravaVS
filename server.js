@@ -483,26 +483,19 @@ function fetchDetailedActivityFromStrava(responseData, detailedActivityIdToFetch
     https.get(options, function (res) {
         //console.log('STATUS: ' + res.statusCode);
         //console.log('HEADERS: ' + JSON.stringify(res.headers));
-        //console.log(res);
-        console.log("path is " + res.socket._httpMessage.path);
 
         res.on('data', function (d) {
             str += d;
 
             console.log("chunk received for detailedActivityIdToFetchFromServer = " + detailedActivityIdToFetchFromServer);
-            //console.log("options.activityId = " + options.activityId);
-            //console.log(String(d));
 
         });
         res.on('end', function () {
             console.log("end received for detailedActivityIdToFetchFromServer = " + detailedActivityIdToFetchFromServer);
-            //console.log(str);
 
             idsOfActivitiesFetchedFromStrava.push(detailedActivityIdToFetchFromServer);
 
             // convert string from server into JSON object
-            //console.log("before parsing");
-            //console.log(str);
             detailedActivityData = JSON.parse(str);
             //console.log(detailedActivityData);
 
@@ -511,9 +504,27 @@ function fetchDetailedActivityFromStrava(responseData, detailedActivityIdToFetch
             responseData.detailedActivitiesToReturn.push(convertedActivity);
 
             // retrieve segment effort ids (and segment id's?) from detailed activity
+            segmentEfforts = detailedActivityData.segment_efforts;
+            console.log("number of segment efforts for this activity is " + segmentEfforts.length);
+
+            segmentEfforts.forEach(addSegmentEffortIdToDB);
+            function addSegmentEffortIdToDB(segmentEffort, index, array) {
+                console.log("add segmentEffort id " + segmentEffort.id + ", activity id = " + detailedActivityIdToFetchFromServer + ", segment id = " + segmentEffort.segment.id);
+                db.query(
+                  "INSERT INTO segmenteffortids (segmentEffortId, activityId, segmentId) " +
+                  " VALUES (?, ?, ?)",
+                  [segmentEffort.id.toString(), detailedActivityIdToFetchFromServer.toString(), segmentEffort.segment.id.toString()],
+                  function (err) {
+                      //if (err) throw err;
+                      if (err) {
+                          console.log("error adding segmenteffortid to db");
+                      }
+                  }
+                );
+            };
 
             // add detailed activity to the database
-            // add segment effort ids (and segment id's?) to the db
+            addDetailedActivityToDB(detailedActivityData);
 
             console.log("check for completion");
             if (idsOfActivitiesFetchedFromStrava.length == Object.keys(detailedActivityIdsToFetchFromServer).length) {
@@ -1051,6 +1062,20 @@ db.query(
       // note - should not proceed to createServer until this callback is executed
   }
 );
+
+db.query(
+  "CREATE TABLE IF NOT EXISTS segmenteffortids ("
+  + "segmentEffortId VARCHAR(32) NOT NULL, "
+  + "activityId VARCHAR(32) NOT NULL, "
+  + "segmentId VARCHAR(32) NOT NULL, "
+  + "PRIMARY KEY(segmentEffortId))",
+  function (err) {
+      if (err) throw err;
+      console.log("create segmenteffortids successful");
+      // note - should not proceed to createServer until this callback is executed
+  }
+);
+
 
 db.query(
   "CREATE TABLE IF NOT EXISTS segmenteffort ("

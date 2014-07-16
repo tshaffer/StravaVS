@@ -467,6 +467,66 @@ function fetchDetailedActivity(activityId) {
         console.log('Caught exception: ' + err);
     });
 }
+function fetchDetailedActivityFromStrava(responseData, detailedActivityIdToFetchFromServer, detailedActivityIdsToFetchFromServer, idsOfActivitiesFetchedFromStrava) {
+
+    var options = {
+        host: 'www.strava.com',
+        path: '/api/v3/activities/' + detailedActivityIdToFetchFromServer.toString(),
+        port: 443,
+        headers: {
+            'Authorization': 'Bearer ' + responseData.accessToken
+        }
+    };
+
+    var str = ""
+
+    https.get(options, function (res) {
+        //console.log('STATUS: ' + res.statusCode);
+        //console.log('HEADERS: ' + JSON.stringify(res.headers));
+        //console.log(res);
+        console.log("path is " + res.socket._httpMessage.path);
+
+        res.on('data', function (d) {
+            str += d;
+
+            console.log("chunk received for detailedActivityIdToFetchFromServer = " + detailedActivityIdToFetchFromServer);
+            //console.log("options.activityId = " + options.activityId);
+            //console.log(String(d));
+
+        });
+        res.on('end', function () {
+            console.log("end received for detailedActivityIdToFetchFromServer = " + detailedActivityIdToFetchFromServer);
+            //console.log(str);
+
+            idsOfActivitiesFetchedFromStrava.push(detailedActivityIdToFetchFromServer);
+
+            // convert string from server into JSON object
+            //console.log("before parsing");
+            //console.log(str);
+            detailedActivityData = JSON.parse(str);
+            //console.log(detailedActivityData);
+
+            // convert from Strava JSON format into the format digestible by the db
+            convertedActivity = convertDetailedActivity(detailedActivityData);
+            responseData.detailedActivitiesToReturn.push(convertedActivity);
+
+            // retrieve segment effort ids (and segment id's?) from detailed activity
+
+            // add detailed activity to the database
+            // add segment effort ids (and segment id's?) to the db
+
+            console.log("check for completion");
+            if (idsOfActivitiesFetchedFromStrava.length == Object.keys(detailedActivityIdsToFetchFromServer).length) {
+                console.log("all detailed activities fetched from strava");
+                sendActivitiesResponse(responseData.serverResponse, responseData.detailedActivitiesToReturn);
+                return;
+            }
+        });
+
+    }).on('error', function () {
+        console.log('Caught exception: ' + err);
+    });
+}
 
 function fetchDetailedActivitiesFromStrava(responseData, detailedActivityIdsToFetchFromServer) {
 
@@ -478,58 +538,8 @@ function fetchDetailedActivitiesFromStrava(responseData, detailedActivityIdsToFe
     for (var key in detailedActivityIdsToFetchFromServer) {
 
         activityId = detailedActivityIdsToFetchFromServer[key];
-
-        var options = {
-            host: 'www.strava.com',
-            path: '/api/v3/activities/' + activityId.toString(),
-            port: 443,
-            headers: {
-                'Authorization': 'Bearer ' + responseData.accessToken
-            }
-        };
-
-        var str = ""
-
-        https.get(options, function (res) {
-            //console.log('STATUS: ' + res.statusCode);
-            //console.log('HEADERS: ' + JSON.stringify(res.headers));
-
-            res.on('data', function (d) {
-                console.log("chunk received");
-                str += d;
-            });
-            res.on('end', function () {
-                console.log("end received");
-                //console.log(str);
-
-                idsOfActivitiesFetchedFromStrava.push(activityId);
-
-                // convert string from server into JSON object
-                detailedActivityData = JSON.parse(str);
-                str = "";
-                //console.log(detailedActivityData);
-
-                // might not be in the right format
-                convertedActivity = convertDetailedActivity(detailedActivityData);
-                responseData.detailedActivitiesToReturn.push(convertedActivity);
-
-                // retrieve segment effort ids (and segment id's?) from detailed activity
-
-                // add detailed activity to the database
-                // add segment effort ids (and segment id's?) to the db
-
-                console.log("check for completion");
-                if (idsOfActivitiesFetchedFromStrava.length == Object.keys(detailedActivityIdsToFetchFromServer).length) {
-                    console.log("all detailed activities fetched from strava");
-                    sendActivitiesResponse(responseData.serverResponse, responseData.detailedActivitiesToReturn);
-                    return;
-                }
-            });
-
-        }).on('error', function () {
-            console.log('Caught exception: ' + err);
-        });
-
+        console.log("invoke fetchDetailedActivityFromStrava with id " + activityId);
+        fetchDetailedActivityFromStrava(responseData, activityId, detailedActivityIdsToFetchFromServer, idsOfActivitiesFetchedFromStrava);
     }
 }
 

@@ -78,10 +78,74 @@ function getSegmentEffortsForAthlete(response, segmentId, athleteId) {
     });
 }
 
+function getDetailedActivity2(responseData) {
+    console.log("getDetailedActivity2 invoked");
+
+    responseData.segmentEffortStruct = {};
+
+    var query = "SELECT * FROM segmenteffortids " +
+                "WHERE activityId=?";
+    db.query(
+      query,
+      [responseData.activityId],
+      function (err, rows) {
+          if (err) throw err;
+          console.log("getDetailedActivity2 query returned");
+          console.log("return from query - rows length = " + rows.length);
+
+          for (var i in rows) {
+              segmentEffortValue = {};
+              segmentEffortValue.segmentId = rows[i].segmentId;
+              segmentEffortValue.segmentEffort = null;
+              segmentEffortValue.segment = null;
+              responseData.segmentEffortStruct[rows[i].segmentEffortId] = segmentEffortValue;
+          }
+
+          console.log(responseData.segmentEffortStruct);
+
+          var queryWhere = "WHERE segmentEffortId in (";
+
+          var segmentEffortIds = [];
+          var ch = '';
+          
+          for (var key in responseData.segmentEffortStruct) {
+              if (responseData.segmentEffortStruct.hasOwnProperty(key)) {
+                  queryWhere += ch + "?";
+                  ch = ',';
+                  segmentEffortIds.push(key);
+              }
+          }         
+          
+          queryWhere += ")";
+          
+          var query = "SELECT * FROM segmenteffort " + queryWhere;
+
+          console.log("query is " + query);
+          console.log("segmentEffortIds is " + segmentEffortIds);
+
+          db.query(
+            query,
+            segmentEffortIds,
+            function (err, rows) {
+                console.log("rows = " + rows);
+            }
+          );
+
+          return;
+      }
+    );
+
+}
+
 // get detailed activity
-function getDetailedActivity(response, activityId) {
-    console.log('getDetailedActivity invoked, id = ' + activityId);
-    console.log("authorizationKey = " + authorizationKey);
+function getDetailedActivity(responseData) {
+    console.log('getDetailedActivity invoked, id = ' + responseData.activityId);
+    getAuthenticatedAthlete(responseData, getDetailedActivity2);
+    return;
+
+
+
+    console.log("accessToken = " + responseData.accessToken);
 
     var options = {
         host: 'www.strava.com',
@@ -467,6 +531,7 @@ function fetchDetailedActivity(activityId) {
         console.log('Caught exception: ' + err);
     });
 }
+
 function fetchDetailedActivityFromStrava(responseData, detailedActivityIdToFetchFromServer, detailedActivityIdsToFetchFromServer, idsOfActivitiesFetchedFromStrava) {
 
     var options = {
@@ -1126,8 +1191,9 @@ var server = http.createServer(function (request, response) {
         return;
     }
     else if (parsedUrl.pathname == '/getDetailedActivity.html') {       // web service call
-        activityId = parsedUrl.query.id;
-        getDetailedActivity(response, activityId);
+        responseData.athleteId = parsedUrl.query.athleteId;
+        responseData.activityId = parsedUrl.query.activityId;
+        getDetailedActivity(responseData);
         return;
     }
     else if (parsedUrl.pathname == '/getSegmentEffortsForAthlete.html') {

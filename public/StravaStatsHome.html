@@ -155,7 +155,7 @@
                 // get detailed activity data for the current athlete
                 $.ajax({
                     url: 'http://localHost:8080/getDetailedActivity.html',
-                    data: { "id": activityId.toString() },
+                    data: { "activityId": activityId, "athleteId": athleteId },
 
                     type: 'GET',
                     dataType: 'json',
@@ -172,14 +172,17 @@
             }
 
             function showDetails(event) {
-                console.log("button pressed: id = " + event.data.id.toString());
-                getDetailedActivity(event.data.id.toString());
+                console.log("button pressed: activityId = " + event.data.activityId + ", athleteId = " + event.data.athleteId);
+                getDetailedActivity(event.data.activityId, event.data.athleteId);
             }
 
             function buildActivityRow(activity) {
 
                 console.log("buildActivityRow invoked, activity is ");
                 console.log(activity);
+
+                // athleteId
+                athleteId = activity.athleteId;
 
                 // id
                 activityId = activity.activityId;
@@ -213,7 +216,7 @@
 
                 // add button handler for this particular activity
                 btnId = "#" + activityId;
-                $(btnId).click({ id: activityId }, showDetails);
+                $(btnId).click({ activityId: activityId, athleteId: athleteId }, showDetails);
             }
 
             function buildActivitiesTable(activities) {

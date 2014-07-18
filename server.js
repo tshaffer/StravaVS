@@ -83,6 +83,7 @@ function getDetailedActivity2(responseData) {
 
     responseData.segmentEffortStruct = {};
 
+    // retrieve a list of segment effort ids for this specific activity
     var query = "SELECT * FROM segmenteffortids " +
                 "WHERE activityId=?";
     db.query(
@@ -93,6 +94,7 @@ function getDetailedActivity2(responseData) {
           console.log("getDetailedActivity2 query returned");
           console.log("return from query - rows length = " + rows.length);
 
+          // for each segment effort associated with this activity, add relevant info to struct
           for (var i in rows) {
               segmentEffortValue = {};
               segmentEffortValue.segmentId = rows[i].segmentId;
@@ -108,11 +110,16 @@ function getDetailedActivity2(responseData) {
           var segmentEffortIds = [];
           var ch = '';
           
+          // create a list of all segment effort id's associated with this activity - we'll fetch a subset of these from Strava
+          var segmentEffortIdsToFetchFromStrava = [];
+
+          // build query to determine which of the segment efforts are already in the database
           for (var key in responseData.segmentEffortStruct) {
               if (responseData.segmentEffortStruct.hasOwnProperty(key)) {
                   queryWhere += ch + "?";
                   ch = ',';
                   segmentEffortIds.push(key);
+                  segmentEffortIdsToFetchFromStrava.push(key);
               }
           }         
           
@@ -128,6 +135,23 @@ function getDetailedActivity2(responseData) {
             segmentEffortIds,
             function (err, rows) {
                 console.log("rows = " + rows);
+
+                // for each row (segment effort found), remove it from the list of segment efforts that must be retrieved from Strava
+                // TBD
+
+                // segmentEffortIdsToFetchFromStrava now reflects the complete list of segment efforts to retrieve
+                // TBD - if there are none in this list, do the appropriate thing
+
+                // the remaining items in segmentEffortIdsToFetchFromStrava need to be fetched from strava (as segment efforts)
+                // if there are none, send the response now??
+                //if (Object.keys(segmentEffortIdsToFetchFromStrava).length == 0) {
+                if (segmentEffortIdsToFetchFromStrava.length == 0) {
+                        //sendActivitiesResponse(responseData.serverResponse, responseData.detailedActivitiesToReturn);
+                }
+                else {
+                    fetchSegmentEffortsFromStrava(responseData, segmentEffortIdsToFetchFromStrava);
+                }
+
             }
           );
 
@@ -135,6 +159,66 @@ function getDetailedActivity2(responseData) {
       }
     );
 
+}
+
+function fetchSegmentEffortsFromStrava(responseData, segmentEffortIdsToFetchFromStrava) {
+
+    console.log("fetchSegmentEffortsFromStrava invoked");
+    console.log(segmentEffortIdsToFetchFromStrava);
+
+    var idsOfSegmentEffortsFetchedFromStrava = [];
+
+    for (var key in segmentEffortIdsToFetchFromStrava) {
+
+        segmentEffortId = segmentEffortIdsToFetchFromStrava[key];
+        console.log("invoke fetchDetailedActivityFromStrava with id " + segmentEffortId);
+        fetchSegmentEffortFromStrava(responseData, segmentEffortId, segmentEffortIdsToFetchFromStrava, idsOfSegmentEffortsFetchedFromStrava);
+    }
+}
+
+function fetchSegmentEffortFromStrava(responseData, segmentEffortId, segmentEffortIdsToFetchFromStrava, idsOfSegmentEffortsFetchedFromStrava) {
+
+    console.log("invoked fetchSegmentEffortFromStrava, id = " + segmentEffortId);
+
+    var options = {
+        host: 'www.strava.com',
+        path: '/api/v3/segment_efforts/' + segmentEffortId.toString(),
+        port: 443,
+        headers: {
+            'Authorization': 'Bearer ' + responseData.accessToken
+        }
+    };
+
+    var str = ""
+
+    https.get(options, function (res) {
+        //console.log('STATUS: ' + res.statusCode);
+        //console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+        res.on('data', function (d) {
+            str += d;
+
+            console.log("chunk received for segmentEffortId = " + segmentEffortId);
+
+        });
+        res.on('end', function () {
+            console.log("end received for segmentEffortId = " + segmentEffortId);
+
+            segmentEffort = JSON.parse(str);
+
+            // create my own version of segmentEffort from the complete object from the server
+
+            // segment effort received - add to structure
+            responseData.segmentEffortStruct[segmentEffortId].segmentEffort = segmentEffort;
+
+            idsOfSegmentEffortsFetchedFromStrava.push(segmentEffortId);
+
+            if (idsOfSegmentEffortsFetchedFromStrava.length == segmentEffortIdsToFetchFromStrava.length) {
+                console.log("all segment efforts retrieved");
+                console.log(responseData.segmentEffortStruct);
+            }
+        });
+    });
 }
 
 // get detailed activity

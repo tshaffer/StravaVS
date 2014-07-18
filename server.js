@@ -78,10 +78,13 @@ function getSegmentEffortsForAthlete(response, segmentId, athleteId) {
     });
 }
 
+// invoked after authentication when user requests details about an individual activity
 function getDetailedActivity2(responseData) {
     console.log("getDetailedActivity2 invoked");
 
+    responseData.detailedEffortsStruct = {};
     responseData.segmentEffortStruct = {};
+    responseData.segmentStruct = {};
 
     // retrieve a list of segment effort ids for this specific activity (get segment id's as well)
     var query = "SELECT * FROM segmenteffortids " +
@@ -95,10 +98,12 @@ function getDetailedActivity2(responseData) {
           console.log("return from query - rows length = " + rows.length);
 
           // create a list of all segment id's associated with this activity - we'll fetch a subset of these from Strava
-          var segmentIdsToFetchFromStrava = [];
+          responseData.segmentIdsToFetchFromStrava = [];
+          responseData.idsOfSegmentFetchedFromStrava = [];
 
           // create a list of all segment effort id's associated with this activity - we'll fetch a subset of these from Strava
-          var segmentEffortIdsToFetchFromStrava = [];
+          responseData.segmentEffortIdsToFetchFromStrava = [];
+          responseData.idsOfSegmentEffortsFetchedFromStrava = [];
 
           // for each segment effort associated with this activity, add relevant info to struct
           // key is 
@@ -112,87 +117,88 @@ function getDetailedActivity2(responseData) {
               segmentEffortValue = {};
               segmentEffortValue.segmentId = rows[i].segmentId;
               segmentEffortValue.segmentEffort = null;
-              segmentEffortValue.segment = null;
+              //segmentEffortValue.segment = null;
               responseData.segmentEffortStruct[rows[i].segmentEffortId] = segmentEffortValue;
 
-              segmentEffortIdsToFetchFromStrava.push(rows[i].segmentEffortId);
-              segmentIdsToFetchFromStrava.push(rows[i].segmentId);
+              responseData.segmentStruct[rows[i].segmentId] = null;
+
+              responseData.segmentEffortIdsToFetchFromStrava.push(rows[i].segmentEffortId);
+              responseData.segmentIdsToFetchFromStrava.push(rows[i].segmentId);
           }
 
           //var a = null;
           //alert(a === null); // true
           //console.log(responseData.segmentEffortStruct);
 
-          fetchSegmentsFromDB(responseData, segmentIdsToFetchFromStrava);
-          return;
+          fetchSegmentsFromDB(responseData);
 
-          // build query to determine which of the segment efforts are already in the database
-          var queryWhere = "WHERE segmentEffortId in (";
-          var segmentEffortIds = [];
-          var ch = '';
-          
-          for (var key in responseData.segmentEffortStruct) {
-              if (responseData.segmentEffortStruct.hasOwnProperty(key)) {
-                  queryWhere += ch + "?";
-                  ch = ',';
-                  segmentEffortIds.push(key);
-              }
-          }         
-          
-          queryWhere += ")";
-          
-          var query = "SELECT * FROM segmenteffort " + queryWhere;
-
-          console.log("query is " + query);
-          console.log("segmentEffortIds is " + segmentEffortIds);
-
-          db.query(
-            query,
-            segmentEffortIds,
-            function (err, rows) {
-                console.log("rows = " + rows);
-
-                // for each row (segment effort found), remove it from the list of segment efforts that must be retrieved from Strava
-                // TBD
-
-                // segmentEffortIdsToFetchFromStrava now reflects the complete list of segment efforts to retrieve
-                // TBD - if there are none in this list, do the appropriate thing
-
-                // the remaining items in segmentEffortIdsToFetchFromStrava need to be fetched from strava (as segment efforts)
-                // if there are none, send the response now??
-                //if (Object.keys(segmentEffortIdsToFetchFromStrava).length == 0) {
-                if (segmentEffortIdsToFetchFromStrava.length == 0) {
-                    // check also to see if segment downloads are complete?
-                        //sendActivitiesResponse(responseData.serverResponse, responseData.detailedActivitiesToReturn);
-                }
-                else {
-                    fetchSegmentEffortsFromStrava(responseData, segmentEffortIdsToFetchFromStrava);
-                }
-
-            }
-          );
-
-          return;
+          fetchSegmentEffortsFromDB(responseData);
       }
     );
-
 }
 
-function fetchSegmentsFromDB(responseData, segmentIds) {
+function fetchSegmentEffortsFromDB(responseData) {
+
+    console.log("fetchSegmentEffortsFromDB invoked");
+
+    // build query to determine which of the segment efforts are already in the database
+    var queryWhere = "WHERE segmentEffortId in (";
+    //var segmentEffortIds = [];
+    var ch = '';
+
+    for (var key in responseData.segmentEffortStruct) {
+        if (responseData.segmentEffortStruct.hasOwnProperty(key)) {
+            queryWhere += ch + "?";
+            ch = ',';
+            //segmentEffortIds.push(key);
+        }
+    }
+
+    queryWhere += ")";
+
+    var query = "SELECT * FROM segmenteffort " + queryWhere;
+
+    console.log("query is " + query);
+    console.log("segmentEffortIds is " + responseData.segmentEffortIdsToFetchFromStrava);
+
+    db.query(
+      query,
+      responseData.segmentEffortIdsToFetchFromStrava,
+      function (err, rows) {
+          console.log("rows = " + rows);
+
+          // for each row (segment effort found), remove it from the list of segment efforts that must be retrieved from Strava
+          // TBD
+
+          // segmentEffortIdsToFetchFromStrava now reflects the complete list of segment efforts to retrieve
+          // TBD - if there are none in this list, do the appropriate thing
+
+          // the remaining items in segmentEffortIdsToFetchFromStrava need to be fetched from strava (as segment efforts)
+          // if there are none, send the response now??
+          //if (Object.keys(segmentEffortIdsToFetchFromStrava).length == 0) {
+          if (responseData.segmentEffortIdsToFetchFromStrava.length == 0) {
+              // check also to see if segment downloads are complete?
+              //sendActivitiesResponse(responseData.serverResponse, responseData.detailedActivitiesToReturn);
+          }
+          else {
+              fetchSegmentEffortsFromStrava(responseData);
+          }
+      }
+    );
+}
+
+function fetchSegmentsFromDB(responseData) {
 
     console.log("fetchSegmentsFromDB invoked");
-
-    segmentIdsToFetchFromStrava = [];
 
     // build query to determine which of the segments are already in the database
     var queryWhere = "WHERE segmentId in (";
 
     var ch = '';
           
-    for (var segmentId in segmentIds) {
+    for (var segmentId in responseData.segmentIdsToFetchFromStrava) {
         queryWhere += ch + "?";
         ch = ',';
-        segmentIdsToFetchFromStrava.push(segmentIds[segmentId]);
     }         
           
     queryWhere += ")";
@@ -200,11 +206,11 @@ function fetchSegmentsFromDB(responseData, segmentIds) {
     var query = "SELECT * FROM segment " + queryWhere;
 
     console.log("query is " + query);
-    console.log("segmentIds is " + segmentIds);
+    console.log("segmentIds is " + responseData.segmentIdsToFetchFromStrava);
 
     db.query(
       query,
-      segmentIds,
+      responseData.segmentIdsToFetchFromStrava,
       function (err, rows) {
           console.log("rows = " + rows);
 
@@ -217,32 +223,30 @@ function fetchSegmentsFromDB(responseData, segmentIds) {
           // the remaining items in segmentIdsToFetchFromStrava need to be fetched from strava (as segments)
           // if there are none, send the response now??
           //if (Object.keys(segmentIdsToFetchFromStrava).length == 0) {
-          if (segmentIdsToFetchFromStrava.length == 0) {
+          if (responseData.segmentIdsToFetchFromStrava.length == 0) {
               // check also to see if segment effort downloads are complete?
               //sendActivitiesResponse(responseData.serverResponse, responseData.detailedActivitiesToReturn);
           }
           else {
-              fetchSegmentsFromStrava(responseData, segmentIdsToFetchFromStrava);
+              fetchSegmentsFromStrava(responseData);
           }
       }
     );
 }
 
-function fetchSegmentsFromStrava(responseData, segmentIdsToFetchFromStrava) {
+function fetchSegmentsFromStrava(responseData) {
     console.log("fetchSegmentsFromStrava invoked");
-    console.log(segmentIdsToFetchFromStrava);
+    console.log(responseData.segmentIdsToFetchFromStrava);
 
-    var idsOfSegmentFetchedFromStrava = [];
+    for (var key in responseData.segmentIdsToFetchFromStrava) {
 
-    for (var key in segmentIdsToFetchFromStrava) {
-
-        segmentId = segmentIdsToFetchFromStrava[key];
-        fetchSegmentFromStrava(responseData, segmentId, segmentIdsToFetchFromStrava, idsOfSegmentFetchedFromStrava);
+        segmentId = responseData.segmentIdsToFetchFromStrava[key];
+        fetchSegmentFromStrava(responseData, segmentId);
     }
 
 }
 
-function fetchSegmentFromStrava(responseData, segmentId, segmentIdsToFetchFromStrava, idsOfSegmentFetchedFromStrava) {
+function fetchSegmentFromStrava(responseData, segmentId) {
 
     console.log("invoked fetchSegmentFromStrava, id = " + segmentId);
 
@@ -272,38 +276,34 @@ function fetchSegmentFromStrava(responseData, segmentId, segmentIdsToFetchFromSt
 
             segment = JSON.parse(str);
 
-            // create my own version of detailedEffort from the complete object from the server
-
             // segment  received - add to structure
-            //responseData.segmentEffortStruct[segmentEffortId].segmentEffort = segmentEffort;
+            responseData.segmentStruct[segmentId] = segment;
 
-            idsOfSegmentFetchedFromStrava.push(segmentId);
+            responseData.idsOfSegmentFetchedFromStrava.push(segmentId);
 
-            if (idsOfSegmentFetchedFromStrava.length == segmentIdsToFetchFromStrava.length) {
-                console.log("all segments retrieved");
-                //console.log(responseData.segmentEffortStruct);
+            if (responseData.idsOfSegmentEffortsFetchedFromStrava.length == responseData.segmentEffortIdsToFetchFromStrava.length &&
+                responseData.idsOfSegmentFetchedFromStrava.length == responseData.segmentIdsToFetchFromStrava.length) {
+                console.log("fetchSegmentFromStrava: all segment efforts and segments retrieved");
             }
         });
     });
 
 }
 
-function fetchSegmentEffortsFromStrava(responseData, segmentEffortIdsToFetchFromStrava) {
+function fetchSegmentEffortsFromStrava(responseData) {
 
     console.log("fetchSegmentEffortsFromStrava invoked");
-    console.log(segmentEffortIdsToFetchFromStrava);
+    console.log(responseData.segmentEffortIdsToFetchFromStrava);
 
-    var idsOfSegmentEffortsFetchedFromStrava = [];
+    for (var key in responseData.segmentEffortIdsToFetchFromStrava) {
 
-    for (var key in segmentEffortIdsToFetchFromStrava) {
-
-        segmentEffortId = segmentEffortIdsToFetchFromStrava[key];
+        segmentEffortId = responseData.segmentEffortIdsToFetchFromStrava[key];
         console.log("invoke fetchSegmentEffortFromStrava with id " + segmentEffortId);
-        fetchSegmentEffortFromStrava(responseData, segmentEffortId, segmentEffortIdsToFetchFromStrava, idsOfSegmentEffortsFetchedFromStrava);
+        fetchSegmentEffortFromStrava(responseData, segmentEffortId);
     }
 }
 
-function fetchSegmentEffortFromStrava(responseData, segmentEffortId, segmentEffortIdsToFetchFromStrava, idsOfSegmentEffortsFetchedFromStrava) {
+function fetchSegmentEffortFromStrava(responseData, segmentEffortId) {
 
     console.log("invoked fetchSegmentEffortFromStrava, id = " + segmentEffortId);
 
@@ -340,10 +340,11 @@ function fetchSegmentEffortFromStrava(responseData, segmentEffortId, segmentEffo
             // segment effort received - add to structure
             responseData.segmentEffortStruct[segmentEffortId].segmentEffort = segmentEffort;
 
-            idsOfSegmentEffortsFetchedFromStrava.push(segmentEffortId);
+            responseData.idsOfSegmentEffortsFetchedFromStrava.push(segmentEffortId);
 
-            if (idsOfSegmentEffortsFetchedFromStrava.length == segmentEffortIdsToFetchFromStrava.length) {
-                console.log("all segment efforts retrieved");
+            if (responseData.idsOfSegmentEffortsFetchedFromStrava.length == responseData.segmentEffortIdsToFetchFromStrava.length &&
+                responseData.idsOfSegmentFetchedFromStrava.length == responseData.segmentIdsToFetchFromStrava.length) {
+                console.log("fetchSegmentEffortFromStrava: all segment efforts and segments retrieved");
                 //console.log(responseData.segmentEffortStruct);
             }
         });

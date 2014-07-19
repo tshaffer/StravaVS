@@ -343,9 +343,13 @@ function fetchSegmentFromStrava(responseData, segmentId) {
             segment = JSON.parse(str);
 
             // segment  received - add to db, structure
-            addSegmentToDB(segment);
+            convertedSegment = addSegmentToDB(segment);
 
-            responseData.segmentStruct[segmentId] = segment;
+            console.log("convertedSegment = ");
+            console.log(convertedSegment);
+
+            // segment is the raw data from the server; need to convert it before adding it to the server
+            responseData.segmentStruct[segmentId] = convertedSegment;
 
             responseData.idsOfSegmentFetchedFromStrava.push(segmentId);
 
@@ -403,11 +407,12 @@ function fetchSegmentEffortFromStrava(responseData, segmentEffortId) {
 
             console.log("segmentId = " + segmentEffort.segment.id);
 
-            // create my own version of segmentEffort from the complete object from the server
+            convertedSegmentEffort = addSegmentEffortToDB(segmentEffort);
 
-            // segment effort received - add to db, structure
-            addSegmentEffortToDB(segmentEffort);
-            responseData.segmentEffortStruct[segmentEffortId].segmentEffort = segmentEffort;
+            console.log("convertedSegmentEffort = ");
+            console.log(convertedSegmentEffort);
+
+            responseData.segmentEffortStruct[segmentEffortId].segmentEffort = convertedSegmentEffort;
 
             responseData.idsOfSegmentEffortsFetchedFromStrava.push(segmentEffortId);
             
@@ -492,6 +497,9 @@ function addSegmentToDB(segment) {
             }
         }
     );
+
+    return { "segmentId": segmentId, "name": name, "distance": distance, "averageGrade": averageGrade, "maxGrade": maxGrade, "totalElevationGain": totalElevationGain };
+
 }
 
 function addSegmentEffortToDB(segmentEffort) {
@@ -517,6 +525,9 @@ function addSegmentEffortToDB(segmentEffort) {
           }
       }
     );
+
+    return { "segmentEffortId": segmentEffortId, "name": name, "movingTime": movingTime, "elapsedTime": elapsedTime, "startDateTime": startDateTime, "distance": distance };
+
 }
 
 function addDetailedActivitiesToDB() {

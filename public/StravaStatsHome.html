@@ -124,23 +124,29 @@
 
             function buildSegmentEffortsRow(segmentEffort) {
 
-                movingTime = getMovingTime(segmentEffort.moving_time);
+                segmentEffortId = segmentEffort.segmentEffortId;
 
-                distanceInMiles = getDistance(segmentEffort.distance);
+                name = segmentEffort.segmentEffortName;
 
-                rowToAdd = '<tr><td>' + segmentEffort.name + '</td><td>' + movingTime + '</td><td>' + distanceInMiles.toFixed(1) + '</td><td>' + "<input id='" + segmentEffort.segment.id.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
+                //movingTime = getMovingTime(segmentEffort.moving_time);
+                movingTime = getMovingTime(segmentEffort.movingTime);
+
+                //distanceInMiles = getDistance(segmentEffort.distance);
+                distanceInMiles = segmentEffort.segmentEffortDistance;
+
+                rowToAdd = '<tr><td>' + name + '</td><td>' + movingTime + '</td><td>' + distanceInMiles.toFixed(1) + '</td><td>' + "<input id='" + segmentEffortId.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
                 $('#DetailedActivityTable').append(rowToAdd);
 
                 // add button handler to show friends' result for this segment
-                btnId = "#" + segmentEffort.segment.id.toString();
-                $(btnId).click({ id: segmentEffort.segment.id.toString(), name: segmentEffort.segment.name }, showFriendsResults);
+                btnId = "#" + segmentEffortId.toString();
+                $(btnId).click({ id: segmentEffortId.toString(), name: name }, showFriendsResults);
 
             }
 
             function buildSegmentEffortsTable(activity) {
                 $('#activityName').html("Ride name is " + activity.name);
 
-                segmentEfforts = activity.segment_efforts;
+                segmentEfforts = activity.detailedEfforts;
                 $.each(segmentEfforts, function (index, segmentEffort) {
                     buildSegmentEffortsRow(segmentEffort);
                 });

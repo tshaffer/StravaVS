@@ -78,6 +78,13 @@ function getSegmentEffortsForAthlete(response, segmentId, athleteId) {
     });
 }
 
+function addDetailedEffortsToDB(responseData) {
+    console.log("addDetailedEffortsToDB invoked");
+
+    // create detailed efforts from segmentEffort and segmentData
+
+}
+
 // invoked after authentication when user requests details about an individual activity
 function getDetailedActivity2(responseData) {
     console.log("getDetailedActivity2 invoked");
@@ -276,7 +283,9 @@ function fetchSegmentFromStrava(responseData, segmentId) {
 
             segment = JSON.parse(str);
 
-            // segment  received - add to structure
+            // segment  received - add to db, structure
+            addSegmentToDB(segment);
+
             responseData.segmentStruct[segmentId] = segment;
 
             responseData.idsOfSegmentFetchedFromStrava.push(segmentId);
@@ -284,6 +293,7 @@ function fetchSegmentFromStrava(responseData, segmentId) {
             if (responseData.idsOfSegmentEffortsFetchedFromStrava.length == responseData.segmentEffortIdsToFetchFromStrava.length &&
                 responseData.idsOfSegmentFetchedFromStrava.length == responseData.segmentIdsToFetchFromStrava.length) {
                 console.log("fetchSegmentFromStrava: all segment efforts and segments retrieved");
+                addDetailedEffortsToDB(responseData);
             }
         });
     });
@@ -337,7 +347,8 @@ function fetchSegmentEffortFromStrava(responseData, segmentEffortId) {
 
             // create my own version of segmentEffort from the complete object from the server
 
-            // segment effort received - add to structure
+            // segment effort received - add to db, structure
+            addSegmentEffortToDB(segmentEffort);
             responseData.segmentEffortStruct[segmentEffortId].segmentEffort = segmentEffort;
 
             responseData.idsOfSegmentEffortsFetchedFromStrava.push(segmentEffortId);
@@ -345,7 +356,7 @@ function fetchSegmentEffortFromStrava(responseData, segmentEffortId) {
             if (responseData.idsOfSegmentEffortsFetchedFromStrava.length == responseData.segmentEffortIdsToFetchFromStrava.length &&
                 responseData.idsOfSegmentFetchedFromStrava.length == responseData.segmentIdsToFetchFromStrava.length) {
                 console.log("fetchSegmentEffortFromStrava: all segment efforts and segments retrieved");
-                //console.log(responseData.segmentEffortStruct);
+                addDetailedEffortsToDB(responseData);
             }
         });
     });
@@ -401,6 +412,31 @@ function getDetailedActivity(responseData) {
     });
 }
 
+function addSegmentToDB(segment) {
+
+    segmentId = segment.id.toString();
+    name = segment.name;
+    distance = segment.distance * 0.000621371;
+    averageGrade = segment.average_grade;
+    maxGrade = segment.maximum_grade;
+    totalElevationGain = segment.total_elevation_gain * 3.28084;
+
+    db.query(
+        "INSERT INTO segment (segmentId, name, distance, averageGrade, maxGrade, totalElevationGain) " +
+        " VALUES (?, ?, ?, ?, ?, ?)",
+        [segmentId, name, distance, averageGrade, maxGrade, totalElevationGain],
+        function (err) {
+            //if (err) throw err;
+            if (err) {
+                console.log("db error in addSegmentToDB");
+            }
+            else {
+                console.log("added segment successfully");
+            }
+        }
+    );
+}
+
 function addSegmentEffortToDB(segmentEffort) {
     segmentEffortId = segmentEffort.id.toString();
     name = segmentEffort.name;
@@ -421,76 +457,9 @@ function addSegmentEffortToDB(segmentEffort) {
           else {
               console.log("added detailed activity successfully");
           }
-          // add next segment effort
-          if (segmentEfforts.length > 0) {
-              console.log("number of segmentEfforts is " + segmentEfforts.length);
-              segmentEffort = segmentEfforts.shift();
-              console.log("grabbed next segmentEffort");
-              console.log("next segmentEffort Id is " + segmentEffort.id);
-              addSegmentEffortToDB(segmentEffort);
-          }
-          else {
-              // add next detailed activity to db
-              if (fetchedActivities.length > 0) {
-                  console.log("number of remaining detailedActivities is " + fetchedActivities.length);
-                  detailedActivity = fetchedActivities.shift();
-                  addDetailedActivityToDB(detailedActivity);
-              }
-              else {
-                  console.log("ended up here which means i need to look at this code more");
-              }
-          }
       }
     );
 }
-
-//function addDetailedActivityToDB(detailedActivity) {
-
-//    activityId = detailedActivity.id.toString();
-//    athleteId = detailedActivity.athlete.id.toString();
-//    name = detailedActivity.name;
-//    description = detailedActivity.description;
-//    distance = detailedActivity.distance * 0.000621371;
-//    movingTime = detailedActivity.moving_time;
-//    elapsedTime = detailedActivity.elapsed_time;
-//    totalElevationGain = Math.floor(detailedActivity.total_elevation_gain * 3.28084);
-//    averageSpeed = detailedActivity.average_speed * 2.23694;
-//    maxSpeed = detailedActivity.max_speed * 2.23694;
-//    calories = detailedActivity.calories;
-//    startDateTime = getMySqlDateTime(detailedActivity.start_date_local);
-//    console.log("mySql datetime = " + startDateTime);
-
-//    db.query(
-//      "INSERT INTO detailedactivity (activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories) " +
-//      " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-//      [activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories],
-//      function (err) {
-//          if (err) throw err;
-//          console.log("added detailed activity successfully");
-
-//          // get segment efforts for this detailed activity
-//          // create a list of segmentEfforts
-//          segmentEfforts = [];
-//          function saveSegmentEffort(segmentEffort, index, array) {
-//              console.log("save segmentEffort whose id is " + segmentEffort.id);
-//              segmentEfforts.push(segmentEffort);
-//          }
-//          detailedActivity.segment_efforts.forEach(saveSegmentEffort);
-
-//          // add segment efforts to the db
-//          if (segmentEfforts.length > 0) {
-//              console.log("number of segmentEfforts is " + segmentEfforts.length);
-//              segmentEffort = segmentEfforts.shift();
-//              console.log("grabbed first segmentEffort");
-//              console.log("initial segmentEffort Id is " + segmentEffort.id);
-//              addSegmentEffortToDB(segmentEffort);
-//          }
-//          else {
-//              sendActivitiesResponse();
-//          }
-//      }
-//    );
-//}
 
 function addDetailedActivitiesToDB() {
 

@@ -7,15 +7,6 @@ var url = require('url');
 var mysql = require('mysql');
 
 var cache = {};
-var authenticationData = {};
-var activityIds = [];
-var detailedActivityIdsToFetch = [];
-var detailedActivities = [];
-var segmentEfforts = [];
-var accessToken;
-
-//var detailedActivitiesToReturn = [];
-var fetchedActivities = [];
 
 function getMySqlDateTime(isoDateTime) {
     jsDateTime = new Date(isoDateTime);
@@ -78,65 +69,9 @@ function getSegmentEffortsForAthlete(response, segmentId, athleteId) {
     });
 }
 
-function sendDetailedEffortsResponse(responseData) {
-    console.log("sendDetailedEffortsResponse invoked");
-
-    var detailedActivity = {};
-    detailedActivity.name = "My Activity";
-    detailedActivity.detailedEfforts = [];
-
-    for (var segmentEffortId in responseData.segmentEffortStruct) {
-        if (responseData.segmentEffortStruct.hasOwnProperty(segmentEffortId)) {
-            segmentEffortValue = responseData.segmentEffortStruct[segmentEffortId];
-            console.log("segmentEffortValue");
-            console.log(segmentEffortValue);
-
-            // retrieve segment effort data
-            segmentEffort = segmentEffortValue.segmentEffort;
-
-            // retrieve corresponding segment data
-            segmentId = segmentEffortValue.segmentId;
-            console.log("segmentId = " + segmentId);
-
-            segment = responseData.segmentStruct[segmentId];
-
-            detailedEffort = {};
-
-            console.log(segment);
-
-            // segment data
-            detailedEffort.segmentId = segment.segmentId;
-            detailedEffort.segmentName = segment.name;
-            detailedEffort.segmentDistance = segment.distance;
-            detailedEffort.averageGrade = segment.averageGrade;
-            detailedEffort.maxGrade = segment.maxGrade;
-            detailedEffort.totalElevationGain = segment.totalElevationGain;
-
-            // segment effort data
-            detailedEffort.segmentEffortId = segmentEffort.segmentEffortId;
-            detailedEffort.segmentEffortName = segmentEffort.name;
-            detailedEffort.movingTime = segmentEffort.movingTime;
-            detailedEffort.elapsedTime = segmentEffort.elapsedTime;
-            detailedEffort.startDateTime = segmentEffort.startDateTime;
-            detailedEffort.segmentEffortDistance = segmentEffort.distance;
-
-            detailedActivity.detailedEfforts.push(detailedEffort);
-        }
-    }
-
-    console.log(detailedActivity);
-
-    responseData.serverResponse.writeHead(
-    200,
-    { "content-type": 'application/json' }
-    );
-    responseData.serverResponse.end(JSON.stringify(detailedActivity, null, 3));
-
-}
-
 // invoked after authentication when user requests details about an individual activity
-function getDetailedActivity2(responseData) {
-    console.log("getDetailedActivity2 invoked");
+function getEfforts(responseData) {
+    console.log("getEfforts invoked");
 
     responseData.detailedEffortsStruct = {};
     responseData.segmentEffortStruct = {};
@@ -150,7 +85,7 @@ function getDetailedActivity2(responseData) {
       [responseData.activityId],
       function (err, rows) {
           if (err) throw err;
-          console.log("getDetailedActivity2 query returned");
+          console.log("getEfforts query returned");
           console.log("return from query - rows length = " + rows.length);
 
           // create a list of all segment id's associated with this activity - we'll fetch a subset of these from Strava
@@ -167,13 +102,11 @@ function getDetailedActivity2(responseData) {
           // value is AA with the following members:
           //    segmentId
           //    segmentEffort
-          //    segment
 
           for (var i in rows) {
               segmentEffortValue = {};
               segmentEffortValue.segmentId = rows[i].segmentId;
               segmentEffortValue.segmentEffort = null;
-              //segmentEffortValue.segment = null;
               responseData.segmentEffortStruct[rows[i].segmentEffortId] = segmentEffortValue;
 
               responseData.segmentStruct[rows[i].segmentId] = null;
@@ -426,9 +359,9 @@ function fetchSegmentEffortFromStrava(responseData, segmentEffortId) {
 
 // get detailed activity
 // data to return to client includes my version of segmentEfforts that also includes a portion of segment data
-function getDetailedActivity(responseData) {
-    console.log('getDetailedActivity invoked, id = ' + responseData.activityId);
-    getAuthenticatedAthlete(responseData, getDetailedActivity2);
+function getActivityEfforts(responseData) {
+    console.log('getActivityEfforts invoked, id = ' + responseData.activityId);
+    getAuthenticatedAthlete(responseData, getEfforts);
     return;
 
 
@@ -530,125 +463,6 @@ function addSegmentEffortToDB(segmentEffort) {
 
 }
 
-function addDetailedActivitiesToDB() {
-
-    // add the newly fetched activities to the db
-    if (fetchedActivities.length > 0) {
-        console.log("number of remaining detailedActivities is " + fetchedActivities.length);
-        detailedActivity = fetchedActivities.shift();
-        addDetailedActivityToDB(detailedActivity);
-    }
-}
-
-function getDetailedActivityData(activityId) {
-    console.log("getDetailedActivityData invoked with activityId = " + activityId + ", accessToken = " + accessToken);
-
-    var options = {
-        host: 'www.strava.com',
-        path: '/api/v3/activities/' + activityId.toString(),
-        port: 443,
-        headers: {
-            'Authorization': 'Bearer ' + accessToken
-        }
-    };
-
-    console.log("almost complete url is " + options.host + options.path);
-
-    var str = ""
-
-    https.get(options, function (res) {
-        //console.log('STATUS: ' + res.statusCode);
-        //console.log('HEADERS: ' + JSON.stringify(res.headers));
-
-        res.on('data', function (d) {
-            console.log("chunk received");
-            str += d;
-        });
-        res.on('end', function () {
-            console.log("end received");
-            //console.log(str);
-
-            detailedActivityData = JSON.parse(str);
-            detailedActivities.push(detailedActivityData); // obsolete
-            detailedActivitiesToReturn.push(detailedActivityData);
-            fetchedActivities.push(detailedActivityData); // keep track of which ones to add to the db
-
-            if (detailedActivityIdsToFetch.length > 0) {
-                console.log("number of remaining activities is " + detailedActivityIdsToFetch.length);
-                activityId = detailedActivityIdsToFetch.shift();
-                console.log("grabbed next activityId");
-                console.log("current activity id is " + activityId);
-                getDetailedActivityData(activityId);
-            }
-            else {
-                // save new detailed activity data in the database
-                addDetailedActivitiesToDB();
-            }
-        });
-
-    }).on('error', function () {
-        console.log('Caught exception: ' + err);
-    });
-
-}
-
-function getDetailedActivities(athleteId, serverActivityIds) {
-    var query = "SELECT * FROM detailedactivity " +
-                "WHERE athleteId=?";
-    db.query(
-      query,
-      [athleteId],
-      function (err, rows) {
-          if (err) throw err;
-          console.log("getDetailedActivities invoked");
-          console.log("return from query - rows length = " + rows.length);
-
-          if (rows.length == 0) {
-              console.log("no deTailed activities found for this athlete");
-              // get activities from Strava server
-          }
-          else {
-              // make a list of activities that came back from the Strava server that are not in the db
-
-              // make an associative array of activities from the db, indexed by activityId
-              // also, add each item from the db to the list of detailed activities that will be returned by the server.
-              dbActivities = {};
-              detailedActivitiesToReturn = [];
-              for (var i in rows) {
-                  dbActivities[rows[i].activityId] = rows[i];
-                  detailedActivitiesToReturn.push(rows[i]);
-              }
-
-              // compare to activities returned from server (activityIds)
-              for (var i in serverActivityIds) {
-                  activityId = serverActivityIds[i];
-                  if (!(activityId in dbActivities)) {
-                      detailedActivityIdsToFetch.push(activityId);
-                  }
-              }
-
-              console.log("detailedActivityIdsToFetch = ");
-              console.log(detailedActivityIdsToFetch);
-
-              // start getting items from the server
-              if (detailedActivityIdsToFetch.length == 0) {
-                  // don't need to fetch any more from server, return the current list
-                  sendActivitiesResponse();
-              }
-              else {
-                  console.log("number of activities is " + detailedActivityIdsToFetch.length);
-                  activityId = detailedActivityIdsToFetch.shift();
-                  console.log("grabbed first activityId");
-                  console.log("initial activity id is " + activityId);
-                  getDetailedActivityData(activityId);
-              }
-          }
-      }
-    );
-}
-
-var activitiesResponse;
-
 function getAuthenticatedAthlete(responseData, nextFunction) {
 
     athleteId = responseData.athleteId;
@@ -727,61 +541,6 @@ function addDetailedActivityToDB(detailedActivity) {
           console.log("added detailed activity successfully");
       }
     );
-}
-
-function addSummaryActivitiesToDB(responseData, summaryActivitiesFromStrava, summaryActivitiesToStoreInDB) {
-
-    console.log("addSummaryActivitiesToDB invoked");
-
-    for (var key in summaryActivitiesToStoreInDB) {
-        console.log("add summary activity with id " + key + " to the database");
-        //console.log(summaryActivitiesToStoreInDB[key]);
-        addSummaryActivityToDB(summaryActivitiesToStoreInDB[key]);
-    }
-
-}
-
-function fetchDetailedActivity(activityId) {
-
-    console.log("fetchDetailedActivity invoked with activityId = " + activityId);
-
-    var options = {
-        host: 'www.strava.com',
-        path: '/api/v3/activities/' + activityId.toString(),
-        port: 443,
-        headers: {
-            'Authorization': 'Bearer ' + responseData.accessToken
-        }
-    };
-
-    var str = ""
-
-    https.get(options, function (res) {
-        //console.log('STATUS: ' + res.statusCode);
-        //console.log('HEADERS: ' + JSON.stringify(res.headers));
-
-        res.on('data', function (d) {
-            console.log("chunk received");
-            str += d;
-        });
-        res.on('end', function () {
-            console.log("end received");
-            //console.log(str);
-
-            // convert string from server into JSON object
-            detailedActivityData = JSON.parse(str);
-            //console.log(detailedActivityData);
-
-            // retrieve segment effort ids (and segment id's?) from detailed activity
-
-            // add detailed activity to the database
-            // add segment effort ids (and segment id's?) to the db
-
-        });
-
-    }).on('error', function () {
-        console.log('Caught exception: ' + err);
-    });
 }
 
 function fetchDetailedActivityFromStrava(responseData, detailedActivityIdToFetchFromServer, detailedActivityIdsToFetchFromServer, idsOfActivitiesFetchedFromStrava) {
@@ -979,192 +738,11 @@ function getSummaryActivitiesFromStrava(responseData) {
     });
 }
 
-function listAthleteActivitiesNewest(responseData) {
-    console.log('listAthleteActivitiesNewest invoked');
+// get a list of activities for the authenticated user
+function listAthleteActivities(responseData) {
+    console.log('listAthleteActivities invoked');
     console.log('athleteId=', responseData.athleteId);
     getAuthenticatedAthlete(responseData, getSummaryActivitiesFromStrava);
-}
-
-function listAthleteActivitiesNew(response, athleteId) {
-
-    console.log('listAthleteActivities invoked');
-    console.log('athleteId=', athleteId);
-
-    console.log("query for existing athlete entry");
-    var query = "SELECT * FROM authenticatedathlete " +
-      "WHERE athleteId=?";
-    db.query(
-      query,
-      [athleteId],
-      function (err, rows) {
-          if (err) throw err;
-          console.log("return from query - rows length = " + rows.length);
-
-          if (rows.length == 0) {
-              console.log("authentication data not found for this athlete");
-              // to do - redirect user back to connect page
-          }
-          else {
-              //console.log("The following row was returned from the db");
-              //console.log(rows[0]);
-
-              var accessToken = rows[0].authorizationKey;
-              console.log("retrieved accessToken " + accessToken);
-
-
-              var options = {
-                  host: 'www.strava.com',
-                  path: '/api/v3/athlete/activities',
-                  port: 443,
-                  headers: {
-                      'Authorization': 'Bearer ' + accessToken
-                  }
-              };
-
-              var activitiesStr = ""
-
-              https.get(options, function (res) {
-
-                  res.on('data', function (d) {
-                      console.log("chunk received");
-                      activitiesStr += d;
-                  });
-                  res.on('end', function () {
-                      console.log("end received");
-
-                      var activities = JSON.parse(activitiesStr);
-                      var athleteDetailedActivities = [];
-
-                      // create a list of activity id's retrieved from Strava server
-                      function fetchActivity(activity, index, array) {
-
-                          console.log("fetchActivity invoked with id = " + activity.id + ", accessToken = " + accessToken);
-
-                          var options = {
-                              host: 'www.strava.com',
-                              path: '/api/v3/activities/' + activity.id.toString(),
-                              port: 443,
-                              headers: {
-                                  'Authorization': 'Bearer ' + accessToken
-                              }
-                          };
-
-                          var detailedActivityStr = ""
-
-                          https.get(options, function (res) {
-                              //console.log('STATUS: ' + res.statusCode);
-                              //console.log('HEADERS: ' + JSON.stringify(res.headers));
-
-                              res.on('data', function (d) {
-                                  console.log("chunk received for activity id = " + activity.id);
-                                  detailedActivityStr += d;
-                              });
-                              res.on('end', function () {
-                                  console.log("end received for activity id = " + activity.id);
-                                  //console.log(str);
-
-                                  var myDetailedActivityData = JSON.parse(detailedActivityStr);
-                                  athleteDetailedActivities.push(myDetailedActivityData);
-                              });
-
-                          }).on('error', function () {
-                              console.log('Caught exception: ' + err);
-                          });
-                      }
-                      activities.forEach(fetchActivity);
-
-                      // compare to list of activities in the database for the current athlete
-                  });
-
-              }).on('error', function () {
-                  console.log('Caught exception: ' + err);
-              });
-
-          }
-      }
-    );
-}
-
-// get a list of activities for the authenticated user
-function listAthleteActivities(response, athleteId) {
-
-    activitiesResponse = response;
-
-    console.log('listAthleteActivities invoked');
-    console.log('athleteId=', athleteId);
-
-    console.log("query for existing athlete entry");
-    var query = "SELECT * FROM authenticatedathlete " +
-      "WHERE athleteId=?";
-    db.query(
-      query,
-      [athleteId],
-      function (err, rows) {
-          if (err) throw err;
-          console.log("return from query - rows length = " + rows.length);
-
-          if (rows.length == 0) {
-              console.log("authentication data not found for this athlete");
-              // to do - redirect user back to connect page
-          }
-          else {
-              //console.log("The following row was returned from the db");
-              //console.log(rows[0]);
-
-              accessToken = rows[0].authorizationKey;
-              console.log("retrieved accessToken " + accessToken);
-
-              // todo? - check that the accessToken hasn't changed from what is stored in the db. If it has, update the db?
-
-              var options = {
-                  host: 'www.strava.com',
-                  path: '/api/v3/athlete/activities',
-                  port: 443,
-                  headers: {
-                      'Authorization': 'Bearer ' + accessToken
-                  }
-              };
-
-              var str = ""
-
-              var serverActivityIds = [];
-
-              // fetch up to date activity data from the server
-              // this data includes the summary activities for the authenticated athlete. however, we want to return the detailed activities for the authenticated athlete.
-              https.get(options, function (res) {
-                  //console.log('STATUS: ' + res.statusCode);
-                  //console.log('HEADERS: ' + JSON.stringify(res.headers));
-
-                  res.on('data', function (d) {
-                      console.log("chunk received");
-                      str += d;
-                  });
-                  res.on('end', function () {
-                      console.log("end received");
-                      //console.log(str);
-
-                      activities = JSON.parse(str);
-                      console.log(activities[0].id);
-
-                      // need to return detailed activities. see if the corresponding detailed activities are in the db.
-                      // for each one that is not, fetch it from Strava and add it to the db. then return the data to the user
-
-                      // create a list of activity id's retrieved from Strava server
-                      function saveActivity(activity, index, array) {
-                          serverActivityIds.push(activity.id);
-                      }
-                      activities.forEach(saveActivity);
-
-                      // compare to list of activities in the database for the current athlete
-                      getDetailedActivities(athleteId, serverActivityIds);
-                  });
-
-              }).on('error', function () {
-                  console.log('Caught exception: ' + err);
-              });
-          }
-      }
-    );
 }
 
 // perform token exchange with Strava server
@@ -1329,104 +907,166 @@ function sendActivitiesResponse(response, activitiesAsJson) {
     response.end(JSON.stringify(activitiesAsJson, null, 3));
 }
 
+function sendDetailedEffortsResponse(responseData) {
+    console.log("sendDetailedEffortsResponse invoked");
+
+    var detailedActivity = {};
+    detailedActivity.name = "My Activity";
+    detailedActivity.detailedEfforts = [];
+
+    for (var segmentEffortId in responseData.segmentEffortStruct) {
+        if (responseData.segmentEffortStruct.hasOwnProperty(segmentEffortId)) {
+            segmentEffortValue = responseData.segmentEffortStruct[segmentEffortId];
+            console.log("segmentEffortValue");
+            console.log(segmentEffortValue);
+
+            // retrieve segment effort data
+            segmentEffort = segmentEffortValue.segmentEffort;
+
+            // retrieve corresponding segment data
+            segmentId = segmentEffortValue.segmentId;
+            console.log("segmentId = " + segmentId);
+
+            segment = responseData.segmentStruct[segmentId];
+
+            detailedEffort = {};
+
+            console.log(segment);
+
+            // segment data
+            detailedEffort.segmentId = segment.segmentId;
+            detailedEffort.segmentName = segment.name;
+            detailedEffort.segmentDistance = segment.distance;
+            detailedEffort.averageGrade = segment.averageGrade;
+            detailedEffort.maxGrade = segment.maxGrade;
+            detailedEffort.totalElevationGain = segment.totalElevationGain;
+
+            // segment effort data
+            detailedEffort.segmentEffortId = segmentEffort.segmentEffortId;
+            detailedEffort.segmentEffortName = segmentEffort.name;
+            detailedEffort.movingTime = segmentEffort.movingTime;
+            detailedEffort.elapsedTime = segmentEffort.elapsedTime;
+            detailedEffort.startDateTime = segmentEffort.startDateTime;
+            detailedEffort.segmentEffortDistance = segmentEffort.distance;
+
+            detailedActivity.detailedEfforts.push(detailedEffort);
+        }
+    }
+
+    console.log(detailedActivity);
+
+    responseData.serverResponse.writeHead(
+    200,
+    { "content-type": 'application/json' }
+    );
+    responseData.serverResponse.end(JSON.stringify(detailedActivity, null, 3));
+
+}
+
+function initDB() {
+
+    console.log('create connection');
+
+    db = mysql.createConnection({
+        host: '127.0.0.1',
+        user: 'ted',
+        password: 'ted69',
+        database: 'strava'
+    });
+
+    console.log("connect");
+
+    db.connect();
+
+    db.query(
+      "CREATE TABLE IF NOT EXISTS authenticatedAthlete ("
+      + "athleteId VARCHAR(32) NOT NULL, "
+      + "authorizationKey VARCHAR(64) NOT NULL,"
+      + "PRIMARY KEY(athleteId))",
+      function (err) {
+          if (err) throw err;
+          console.log("create authenticatedAthlete successful");
+          // note - should not proceed to createServer until this callback is executed
+      }
+    );
+
+    db.query(
+      "CREATE TABLE IF NOT EXISTS detailedActivity ("
+      + "activityId VARCHAR(32) NOT NULL, "
+      + "athleteId VARCHAR(32) NOT NULL, "
+      + "name VARCHAR(64) NOT NULL, "
+      + "description VARCHAR(256) NOT NULL, "
+      + "distance FLOAT NOT NULL, "
+      + "movingTime INT NOT NULL, "
+      + "elapsedTime INT NOT NULL, "
+      + "totalElevationGain INT NOT NULL, "
+      + "startDateTime DATE NOT NULL, "
+      + "averageSpeed FLOAT NOT NULL, "
+      + "maxSpeed FLOAT NOT NULL, "
+      + "calories INT NOT NULL, "
+      + "PRIMARY KEY(activityId))",
+      function (err) {
+          if (err) throw err;
+          console.log("create detailedActivity successful");
+          // note - should not proceed to createServer until this callback is executed
+      }
+    );
+
+    db.query(
+      "CREATE TABLE IF NOT EXISTS segmenteffortids ("
+      + "segmentEffortId VARCHAR(32) NOT NULL, "
+      + "activityId VARCHAR(32) NOT NULL, "
+      + "segmentId VARCHAR(32) NOT NULL, "
+      + "PRIMARY KEY(segmentEffortId))",
+      function (err) {
+          if (err) throw err;
+          console.log("create segmenteffortids successful");
+          // note - should not proceed to createServer until this callback is executed
+      }
+    );
+
+
+    db.query(
+      "CREATE TABLE IF NOT EXISTS segmenteffort ("
+      + "segmentEffortId VARCHAR(32) NOT NULL, "
+      + "name VARCHAR(128) NOT NULL, "
+      + "movingTime INT NOT NULL, "
+      + "elapsedTime INT NOT NULL, "
+      + "startDateTime DATE NOT NULL, "
+      + "distance FLOAT NOT NULL, "
+      + "PRIMARY KEY(segmentEffortId))",
+      function (err) {
+          if (err) throw err;
+          console.log("create segmenteffort successful");
+          // note - should not proceed to createServer until this callback is executed
+      }
+    );
+
+    db.query(
+      "CREATE TABLE IF NOT EXISTS segment ("
+      + "segmentId VARCHAR(32) NOT NULL, "
+      + "name VARCHAR(128) NOT NULL, "
+      + "distance FLOAT NOT NULL, "
+      + "averageGrade FLOAT NOT NULL, "
+      + "maxGrade FLOAT NOT NULL, "
+      + "totalElevationGain FLOAT NOT NULL, "
+      + "PRIMARY KEY(segmentId))",
+      function (err) {
+          if (err) throw err;
+          console.log("create segment successful");
+          // note - should not proceed to createServer until this callback is executed
+      }
+    );
+}
+
 var globalCounter = 0;
 var requestCounter = 0;
+var db;
 
 console.log('begin execution: global counter = ' + globalCounter.toString());
 globalCounter++;
 
-console.log('create connection');
-
-var db = mysql.createConnection({
-    host: '127.0.0.1',
-    user: 'ted',
-    password: 'ted69',
-    database: 'strava'
-});
-
-console.log("connect");
-
-db.connect();
-
-db.query(
-  "CREATE TABLE IF NOT EXISTS authenticatedAthlete ("
-  + "athleteId VARCHAR(32) NOT NULL, "
-  + "authorizationKey VARCHAR(64) NOT NULL,"
-  + "PRIMARY KEY(athleteId))",
-  function (err) {
-      if (err) throw err;
-      console.log("create authenticatedAthlete successful");
-      // note - should not proceed to createServer until this callback is executed
-  }
-);
-
-db.query(
-  "CREATE TABLE IF NOT EXISTS detailedActivity ("
-  + "activityId VARCHAR(32) NOT NULL, "
-  + "athleteId VARCHAR(32) NOT NULL, "
-  + "name VARCHAR(64) NOT NULL, "
-  + "description VARCHAR(256) NOT NULL, "
-  + "distance FLOAT NOT NULL, "
-  + "movingTime INT NOT NULL, "
-  + "elapsedTime INT NOT NULL, "
-  + "totalElevationGain INT NOT NULL, "
-  + "startDateTime DATE NOT NULL, "
-  + "averageSpeed FLOAT NOT NULL, "
-  + "maxSpeed FLOAT NOT NULL, "
-  + "calories INT NOT NULL, "
-  + "PRIMARY KEY(activityId))",
-  function (err) {
-      if (err) throw err;
-      console.log("create detailedActivity successful");
-      // note - should not proceed to createServer until this callback is executed
-  }
-);
-
-db.query(
-  "CREATE TABLE IF NOT EXISTS segmenteffortids ("
-  + "segmentEffortId VARCHAR(32) NOT NULL, "
-  + "activityId VARCHAR(32) NOT NULL, "
-  + "segmentId VARCHAR(32) NOT NULL, "
-  + "PRIMARY KEY(segmentEffortId))",
-  function (err) {
-      if (err) throw err;
-      console.log("create segmenteffortids successful");
-      // note - should not proceed to createServer until this callback is executed
-  }
-);
-
-
-db.query(
-  "CREATE TABLE IF NOT EXISTS segmenteffort ("
-  + "segmentEffortId VARCHAR(32) NOT NULL, "
-  + "name VARCHAR(128) NOT NULL, "
-  + "movingTime INT NOT NULL, "
-  + "elapsedTime INT NOT NULL, "
-  + "startDateTime DATE NOT NULL, "
-  + "distance FLOAT NOT NULL, "
-  + "PRIMARY KEY(segmentEffortId))",
-  function (err) {
-      if (err) throw err;
-      console.log("create segmenteffort successful");
-      // note - should not proceed to createServer until this callback is executed
-  }
-);
-
-db.query(
-  "CREATE TABLE IF NOT EXISTS segment ("
-  + "segmentId VARCHAR(32) NOT NULL, "
-  + "name VARCHAR(128) NOT NULL, "
-  + "distance FLOAT NOT NULL, "
-  + "averageGrade FLOAT NOT NULL, "
-  + "maxGrade FLOAT NOT NULL, "
-  + "totalElevationGain FLOAT NOT NULL, "
-  + "PRIMARY KEY(segmentId))",
-  function (err) {
-      if (err) throw err;
-      console.log("create segment successful");
-      // note - should not proceed to createServer until this callback is executed
-  }
-);
+initDB();
 
 var server = http.createServer(function (request, response) {
 
@@ -1451,16 +1091,14 @@ var server = http.createServer(function (request, response) {
         return;
     }
     else if (parsedUrl.pathname == '/listAthleteActivities.html') {          // web service call
-        //listAthleteActivities(response, parsedUrl.query.athleteId);
-        //listAthleteActivitiesNew(response, parsedUrl.query.athleteId);
         responseData.athleteId = parsedUrl.query.athleteId;
-        listAthleteActivitiesNewest(responseData);
+        listAthleteActivities(responseData);
         return;
     }
-    else if (parsedUrl.pathname == '/getDetailedActivity.html') {       // web service call
+    else if (parsedUrl.pathname == '/getActivityEfforts.html') {       // web service call
         responseData.athleteId = parsedUrl.query.athleteId;
         responseData.activityId = parsedUrl.query.activityId;
-        getDetailedActivity(responseData);
+        getActivityEfforts(responseData);
         return;
     }
     else if (parsedUrl.pathname == '/getSegmentEffortsForAthlete.html') {

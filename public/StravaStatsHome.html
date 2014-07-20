@@ -157,10 +157,10 @@
                 $('#DetailedActivity').show();
             }
 
-            function getDetailedActivity(activityId) {
+            function getActivityEfforts(activityId) {
                 // get detailed activity data for the current athlete
                 $.ajax({
-                    url: 'http://localHost:8080/getDetailedActivity.html',
+                    url: 'http://localHost:8080/getActivityEfforts.html',
                     data: { "activityId": activityId, "athleteId": athleteId },
 
                     type: 'GET',
@@ -179,7 +179,7 @@
 
             function showDetails(event) {
                 console.log("button pressed: activityId = " + event.data.activityId + ", athleteId = " + event.data.athleteId);
-                getDetailedActivity(event.data.activityId, event.data.athleteId);
+                getActivityEfforts(event.data.activityId, event.data.athleteId);
             }
 
             function buildActivityRow(activity) {
@@ -199,20 +199,15 @@
                 date = d.toDateString();
 
                 // distance
-//                miles = activity.distance * 0.000621371;
                 miles = activity.distance;
 
                 // riding time
-                //movingTime = getMovingTime(activity.moving_time);
                 movingTime = getMovingTime(activity.movingTime);
 
                 // elevation gain
-                //elevationGain = activity.total_elevation_gain * 3.28084;
-                //elevationGain = Math.floor(elevationGain);
                 elevationGain = activity.totalElevationGain;
 
                 // average speed (meters per second)
-                //mph = activity.average_speed * 2.23694;
                 mph = activity.averageSpeed;
 
                 calories = activity.calories;

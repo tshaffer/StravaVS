@@ -126,15 +126,25 @@
 
                 segmentEffortId = segmentEffort.segmentEffortId;
 
+                // name
                 name = segmentEffort.segmentEffortName;
 
-                //movingTime = getMovingTime(segmentEffort.moving_time);
+                // time
                 movingTime = getMovingTime(segmentEffort.movingTime);
 
-                //distanceInMiles = getDistance(segmentEffort.distance);
+                // distance
                 distanceInMiles = segmentEffort.segmentEffortDistance;
 
-                rowToAdd = '<tr><td>' + name + '</td><td>' + movingTime + '</td><td>' + distanceInMiles.toFixed(1) + '</td><td>' + "<input id='" + segmentEffortId.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
+                // start date/time
+                startDateTime = "unknown";
+
+                // average grade
+                averageGrade = segmentEffort.averageGrade;
+
+                // elevation gain
+                elevationGain = segmentEffort.totalElevationGain;
+
+                rowToAdd = '<tr><td>' + name + '</td><td>' + movingTime + '</td><td>' + distanceInMiles.toFixed(1) + '</td><td>' + startDateTime + '</td><td>' + averageGrade + '%</td><td>' + elevationGain.toFixed(0) + ' feet</td><td>' + "<input id='" + segmentEffortId.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
                 $('#DetailedActivityTable').append(rowToAdd);
 
                 // add button handler to show friends' result for this segment
@@ -160,7 +170,7 @@
             function getActivityEfforts(activityId, athleteId, activityName) {
                 // get detailed activity data for the current athlete
                 $.ajax({
-                    url: 'http://localHost:8080/getActivityEfforts.html',
+                    url: 'http://localHost:8080/activityEfforts',
                     data: { "activityId": activityId, "athleteId": athleteId, "activityName": activityName },
 
                     type: 'GET',
@@ -244,7 +254,7 @@
 
             // get summary activities for the current athlete
             $.ajax({
-                url: 'http://localHost:8080/listAthleteActivities.html',
+                url: 'http://localHost:8080/athleteActivities',
                 type: 'GET',
                 dataType: 'json',
                 data: { "athleteId": athleteId.toString() },
@@ -317,11 +327,17 @@
             <col style="width:400px">
             <col style="width:130px">
             <col style="width:130px">
+            <col style="width:130px">
+            <col style="width:130px">
+            <col style="width:130px">
 
             <tr>
                 <th>Name</th>
                 <th>Time</th>        
                 <th>Distance</th>
+                <th>Start Date/Time</th>
+                <th>Average Grade</th>
+                <th>Elevation Gain</th>
             </tr>
         </table>
     </div>

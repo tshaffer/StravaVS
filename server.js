@@ -1050,12 +1050,12 @@ var server = http.createServer(function (request, response) {
         performTokenExchange(response, parsedUrl.query.code);
         return;
     }
-    else if (parsedUrl.pathname == '/listAthleteActivities.html') {          // web service call
+    else if (parsedUrl.pathname == '/athleteActivities') {          // web service call
         responseData.athleteId = parsedUrl.query.athleteId;
         listAthleteActivities(responseData);
         return;
     }
-    else if (parsedUrl.pathname == '/getActivityEfforts.html') {       // web service call
+    else if (parsedUrl.pathname == '/activityEfforts') {       // web service call
         responseData.athleteId = parsedUrl.query.athleteId;
         responseData.activityId = parsedUrl.query.activityId;
         responseData.activityName = parsedUrl.query.activityName;

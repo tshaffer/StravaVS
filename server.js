@@ -522,6 +522,9 @@ function addDetailedActivityToDB(detailedActivity) {
     athleteId = detailedActivity.athlete.id.toString();
     name = detailedActivity.name;
     description = detailedActivity.description;
+    if (!description) {
+        description = "";
+    }
     distance = detailedActivity.distance * 0.000621371;
     movingTime = detailedActivity.moving_time;
     elapsedTime = detailedActivity.elapsed_time;
@@ -585,7 +588,7 @@ function fetchDetailedActivityFromStrava(responseData, detailedActivityIdToFetch
 
             segmentEfforts.forEach(addSegmentEffortIdToDB);
             function addSegmentEffortIdToDB(segmentEffort, index, array) {
-                console.log("add segmentEffort id " + segmentEffort.id + ", activity id = " + detailedActivityIdToFetchFromServer + ", segment id = " + segmentEffort.segment.id);
+                //console.log("add segmentEffort id " + segmentEffort.id + ", activity id = " + detailedActivityIdToFetchFromServer + ", segment id = " + segmentEffort.segment.id);
                 db.query(
                   "INSERT INTO segmenteffortids (segmentEffortId, activityId, segmentId) " +
                   " VALUES (?, ?, ?)",

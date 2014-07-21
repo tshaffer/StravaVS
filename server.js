@@ -362,49 +362,6 @@ function fetchSegmentEffortFromStrava(responseData, segmentEffortId) {
 function getActivityEfforts(responseData) {
     console.log('getActivityEfforts invoked, id = ' + responseData.activityId);
     getAuthenticatedAthlete(responseData, getEfforts);
-    return;
-
-
-
-    console.log("accessToken = " + responseData.accessToken);
-
-    var options = {
-        host: 'www.strava.com',
-        path: '/api/v3/activities/' + activityId.toString(),
-        port: 443,
-        headers: {
-            'Authorization': 'Bearer ' + 'fb8085cc4c7f3633533e875eae3dc1e04cef06e8'
-        }
-    };
-
-    console.log("almost complete url is " + options.host + options.path);
-
-    var str = ""
-
-    https.get(options, function (res) {
-        console.log('STATUS: ' + res.statusCode);
-        console.log('HEADERS: ' + JSON.stringify(res.headers));
-
-        res.on('data', function (d) {
-            console.log("chunk received");
-            str += d;
-        });
-        res.on('end', function () {
-            console.log("end received");
-            //console.log(str);
-
-            activityData = JSON.parse(str);
-
-            response.writeHead(
-                200,
-                { "content-type": 'application/json' }
-                );
-            response.end(JSON.stringify(activityData, null, 3));
-        });
-
-    }).on('error', function () {
-        console.log('Caught exception: ' + err);
-    });
 }
 
 function addSegmentToDB(segment) {
@@ -914,7 +871,7 @@ function sendDetailedEffortsResponse(responseData) {
     console.log("sendDetailedEffortsResponse invoked");
 
     var detailedActivity = {};
-    detailedActivity.name = "My Activity";
+    detailedActivity.name = responseData.activityName;
     detailedActivity.detailedEfforts = [];
 
     for (var segmentEffortId in responseData.segmentEffortStruct) {
@@ -1101,6 +1058,7 @@ var server = http.createServer(function (request, response) {
     else if (parsedUrl.pathname == '/getActivityEfforts.html') {       // web service call
         responseData.athleteId = parsedUrl.query.athleteId;
         responseData.activityId = parsedUrl.query.activityId;
+        responseData.activityName = parsedUrl.query.activityName;
         getActivityEfforts(responseData);
         return;
     }

@@ -241,6 +241,22 @@
                 });
             }
 
+            function sortActivitiesByDate(activities) {
+                $.each(activities, function (index, activity) {
+                    activity.dateTime = new Date(activity.startDateTime);
+                    console.log("type of startDateTime is " + typeof activity.startDateTime);
+                    console.log("type of dateTime is " + typeof activity.dateTime);
+                });
+
+                activities.sort(function (a, b) {
+                    if (a.dateTime < b.dateTime)
+                        return 1;
+                    if (a.dateTime > b.dateTime)
+                        return -1
+                    return 0;
+                });
+            }
+
             function showActivitiesTable() {
                 $('#SegmentEffortsFriends').hide();
                 $('#DetailedActivity').hide();
@@ -264,6 +280,8 @@
                 console.log("success");
                 console.log(textStatus);
                 console.log(data);
+
+                sortActivitiesByDate(data);
 
                 buildActivitiesTable(data);
                 showActivitiesTable();

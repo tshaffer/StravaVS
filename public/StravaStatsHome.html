@@ -68,10 +68,6 @@
                 // loop through each athlete, outputting each segment effort for the given athlete
                 $.each(segmentEffortsByAthlete, function (index, friendEfforts) {
                     friendName = friendEfforts.athleteName;
-                    console.log("friendEfforts is");
-                    console.log(friendEfforts);
-                    console.log("friend name is ");
-                    console.log(friendName);
                     $.each(friendEfforts.segmentEffort, function (index, friendEffort) {
                         displayFriendSegmentEffort(friendEffort, friendName);
                     });
@@ -87,14 +83,14 @@
                     return;
                 }
 
-                for (var thisAthleteId in athletes) {
-                    athleteName = athletes[thisAthleteId];  // get an item
-                    delete athletes[thisAthleteId];           // delete from aa
+                for (var friendId in athletes) {
+                    athleteName = athletes[friendId];  // get an item
+                    delete athletes[friendId];           // delete from aa
                     break;
                 }
 
                 console.log('athlete id, name:');
-                console.log(thisAthleteId);
+                console.log(friendId);
                 console.log(athleteName);
 
                 //console.log("was athletes shrunk?");
@@ -102,20 +98,20 @@
 
                 // get summary activities for the specified athlete
                 $.ajax({
-                    url: 'http://localHost:8080/getSegmentEffortsForAthlete.html',
-                    data: { "segment_id": segmentId.toString(), "athlete_id": thisAthleteId.toString(), "athlete_name": athleteName },
+                    url: 'http://localHost:8080/allEfforts',
+                    data: { "segment_id": segmentId.toString(), "athlete_id": athleteId, "friend_id": friendId.toString() },
 
                     type: 'GET',
                     dataType: 'json',
                     error: function () { alert('Failed!'); },
                 })
                 .success(function (data, textStatus, jqXHR) {
-                    console.log("getSegmentEffortsForAthlete success");
+                    console.log("allEfforts success");
                     console.log(textStatus);
                     console.log(data);
 
                     summarySegmentEffort = {};
-                    summarySegmentEffort.athleteId = thisAthleteId;
+                    summarySegmentEffort.athleteId = friendId;
                     summarySegmentEffort.athleteName = athleteName;
                     summarySegmentEffort.segmentEffort = data;
                     segmentEffortsByAthlete.push(summarySegmentEffort);

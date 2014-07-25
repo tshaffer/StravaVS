@@ -72,17 +72,20 @@ function getFriends(responseData) {
 
 }
 
-// get segment efforts for a friend
-function getSegmentEffortsForAthlete(responseData, segmentId, athleteId, athleteName) {
-    console.log('getSegmentEffortsForAthlete invoked, segmentId = ' + segmentId + ', athleteId = ' + athleteId + ', athleteName = ' + athleteName);
-    console.log('getSegmentEffortsForAthlete invoked, responseData.athleteName = ' + responseData.athlete.firstName + " " + responseData.athlete.lastName);
+// get segment efforts for a friend or authenticated athlete
+function allEfforts(responseData) {
+
+    segmentId = responseData.segmentId;
+    athleteId = responseData.friendId;
+
+    console.log('allEfforts invoked, segmentId = ' + segmentId + ', athleteId = ' + athleteId);
 
     var options = {
         host: 'www.strava.com',
         path: '/api/v3/segments/' + segmentId.toString() + '/all_efforts?athlete_id=' + athleteId.toString(),
         port: 443,
         headers: {
-            'Authorization': 'Bearer ' + 'fb8085cc4c7f3633533e875eae3dc1e04cef06e8'
+            'Authorization': 'Bearer ' + responseData.accessToken
         }
     };
 
@@ -1130,11 +1133,11 @@ var server = http.createServer(function (request, response) {
         getActivityEfforts(responseData);
         return;
     }
-    else if (parsedUrl.pathname == '/getSegmentEffortsForAthlete.html') {
-        segmentId = parsedUrl.query.segment_id;
-        athleteId = parsedUrl.query.athlete_id;
-        athleteName = parsedUrl.query.athlete_name;
-        getSegmentEffortsForAthlete(responseData, segmentId, athleteId, athleteName);
+    else if (parsedUrl.pathname == '/allEfforts') {
+        responseData.segmentId = parsedUrl.query.segment_id;
+        responseData.athleteId = parsedUrl.query.athlete_id;
+        responseData.friendId = parsedUrl.query.friend_id;
+        getAuthenticatedAthlete(responseData, allEfforts);
         return;
     }
     else if (parsedUrl.pathname == '/friends') {

@@ -8,7 +8,10 @@
     <script>
         $(document).ready(function () {
           
-            var athleteIds = [];
+            var athleteId;
+            var athleteName;
+
+            var athletes = [];
             var segmentEffortsByAthlete = [];
 
             function getDistance(distanceInMeters) {
@@ -41,7 +44,11 @@
                 return movingTime;
             }
 
-            function displayFriendSegmentEffort(segmentEffort) {
+            function displayFriendSegmentEffort(segmentEffort, friendName) {
+
+                console.log("displayFriendSegmentEffort invoked");
+                console.log("friend name is ");
+                console.log(friendName);
 
                 movingTime = getMovingTime(segmentEffort.moving_time);
 
@@ -49,9 +56,8 @@
                 d = new Date(segmentEffort.start_date_local);
                 date = d.toDateString();
 
-                rowToAdd = '<tr><td>' + segmentEffort.athlete.id.toString() + '</td><td>' + movingTime + '</td><td>' + date + '</td></tr>';
+                rowToAdd = '<tr><td>' + friendName + '</td><td>' + movingTime + '</td><td>' + date + '</td></tr>';
                 $('#SegmentEffortsFriendsTable').append(rowToAdd);
-                console.log("row added: " + rowToAdd);
             }
 
             function displaySummarySegmentEfforts(segmentName) {
@@ -61,8 +67,13 @@
 
                 // loop through each athlete, outputting each segment effort for the given athlete
                 $.each(segmentEffortsByAthlete, function (index, friendEfforts) {
+                    friendName = friendEfforts.athleteName;
+                    console.log("friendEfforts is");
+                    console.log(friendEfforts);
+                    console.log("friend name is ");
+                    console.log(friendName);
                     $.each(friendEfforts.segmentEffort, function (index, friendEffort) {
-                        displayFriendSegmentEffort(friendEffort);
+                        displayFriendSegmentEffort(friendEffort, friendName);
                     });
                 });
             }
@@ -71,19 +82,28 @@
                 console.log('getSummarySegmentEfforts invoked:' + segmentId + ' ' + segmentName);
 
                 // get the id of the next athlete
-                if (athleteIds.length == 0) {
+                if (Object.keys(athletes).length == 0) {
                     displaySummarySegmentEfforts(segmentName);
                     return;
                 }
 
-                athleteId = athleteIds.shift();
+                for (var thisAthleteId in athletes) {
+                    athleteName = athletes[thisAthleteId];  // get an item
+                    delete athletes[thisAthleteId];           // delete from aa
+                    break;
+                }
 
-                console.log('athleteId:' + athleteId);
+                console.log('athlete id, name:');
+                console.log(thisAthleteId);
+                console.log(athleteName);
+
+                //console.log("was athletes shrunk?");
+                //console.log(athletes);
 
                 // get summary activities for the specified athlete
                 $.ajax({
                     url: 'http://localHost:8080/getSegmentEffortsForAthlete.html',
-                    data: { "segment_id": segmentId.toString(), "athlete_id": athleteId.toString() },
+                    data: { "segment_id": segmentId.toString(), "athlete_id": thisAthleteId.toString(), "athlete_name": athleteName },
 
                     type: 'GET',
                     dataType: 'json',
@@ -95,7 +115,8 @@
                     console.log(data);
 
                     summarySegmentEffort = {};
-                    summarySegmentEffort.athleteId = athleteId;
+                    summarySegmentEffort.athleteId = thisAthleteId;
+                    summarySegmentEffort.athleteName = athleteName;
                     summarySegmentEffort.segmentEffort = data;
                     segmentEffortsByAthlete.push(summarySegmentEffort);
 
@@ -104,61 +125,85 @@
             }
 
             function showFriendsResults(event) {
+
+                console.log("athleteId is " + athleteId);
+
                 console.log("button pressed: id = " + event.data.id.toString());
                 console.log(event.data.name);
 
-                segmentEffortsByAthlete = [];
+                // get friends for the authenticated athlete
+                $.ajax({
+                    url: 'http://localHost:8080/friends',
+                    data: { "athleteId": athleteId.toString() },
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    console.log("friends success");
+                    console.log(textStatus);
+                    console.log(data);
 
-                athleteIds = [];
-                athleteIds.push('1681275');
-                athleteIds.push('2843574');
+                    athletes = {};
 
-                getSummarySegmentEfforts(event.data.id, event.data.name);
+                    // data has the list of athletes
+                    $.each(data, function (index, friend) {
+                        athletes[friend.id] = friend.firstname + " " + friend.lastname;
+                    });
 
-                //getSegmentEffortsForAthlete(event.data.id, '1681275');   // Joel Brown
-                //getSegmentEffortsForAthlete(event.data.id, '2843574');   // Me
-                //displaySummarySegmentEfforts(event.data.name);
-                $('#DetailedActivity').hide();         // show the segment efforts table
-                $('#SegmentEffortsFriends').show();    // show the friends segment efforts table
+                    // add authenticated athlete to the list
+                    athletes[athleteId] = athleteName;
+
+                    segmentEffortsByAthlete = [];
+
+                    getSummarySegmentEfforts(event.data.id, event.data.name);
+
+                    $('#DetailedActivity').hide();         // show the segment efforts table
+                    $('#SegmentEffortsFriends').show();    // show the friends segment efforts table
+
+                });
             }
 
-            function buildSegmentEffortsRow(segmentEffort) {
+            function buildSegmentEffortsRow(detailedEffort) {
 
-                segmentEffortId = segmentEffort.segmentEffortId;
+                segmentId = detailedEffort.segmentId;
+                segmentEffortId = detailedEffort.segmentEffortId;
 
                 // name
-                name = segmentEffort.segmentEffortName;
+                name = detailedEffort.segmentEffortName;
 
                 // time
-                movingTime = getMovingTime(segmentEffort.movingTime);
+                movingTime = getMovingTime(detailedEffort.movingTime);
 
                 // distance
-                distanceInMiles = segmentEffort.segmentEffortDistance;
+                distanceInMiles = detailedEffort.segmentEffortDistance;
 
                 // start date/time
-                startDateTime = "unknown";
+                d = new Date(detailedEffort.startDateTime);
+                //startDateTime = d.toDateString();
+                startDateTime = d.toLocaleString();
 
                 // average grade
-                averageGrade = segmentEffort.averageGrade;
+                averageGrade = detailedEffort.averageGrade;
 
                 // elevation gain
-                elevationGain = segmentEffort.totalElevationGain;
+                elevationGain = detailedEffort.totalElevationGain;
 
-                rowToAdd = '<tr><td>' + name + '</td><td>' + movingTime + '</td><td>' + distanceInMiles.toFixed(1) + '</td><td>' + startDateTime + '</td><td>' + averageGrade + '%</td><td>' + elevationGain.toFixed(0) + ' feet</td><td>' + "<input id='" + segmentEffortId.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
+                rowToAdd = '<tr><td>' + name + '</td><td>' + movingTime + '</td><td>' + distanceInMiles.toFixed(1) + '</td><td>' + startDateTime + '</td><td>' + averageGrade + '%</td><td>' + elevationGain.toFixed(0) + ' feet</td><td>' + "<input id='" + segmentId.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
                 $('#DetailedActivityTable').append(rowToAdd);
 
                 // add button handler to show friends' result for this segment
-                btnId = "#" + segmentEffortId.toString();
-                $(btnId).click({ id: segmentEffortId.toString(), name: name }, showFriendsResults);
+                btnId = "#" + segmentId.toString();
+                $(btnId).click({ id: segmentId.toString(), name: name }, showFriendsResults);
 
             }
 
             function buildSegmentEffortsTable(activity) {
                 $('#activityName').html("Ride name is " + activity.name);
 
-                segmentEfforts = activity.detailedEfforts;
-                $.each(segmentEfforts, function (index, segmentEffort) {
-                    buildSegmentEffortsRow(segmentEffort);
+                detailedEfforts = activity.detailedEfforts;
+                $.each(detailedEfforts, function (index, detailedEffort) {
+                    buildSegmentEffortsRow(detailedEffort);
                 });
             }
 
@@ -209,7 +254,7 @@
                 // ride date
                 //d = new Date(activity.start_date_local);
                 d = new Date(activity.startDateTime);
-                date = d.toDateString();
+                date = d.toLocaleString();
 
                 // distance
                 miles = activity.distance;
@@ -264,9 +309,12 @@
             }
 
             // get athleteId
-            var athleteId = $('body').data('athleteid');
+            athleteId = $('body').data('athleteid');
             console.log("athleteId is ");
             console.log(athleteId);
+            athleteName = $('body').data('athletename');
+            console.log("athleteName is ");
+            console.log(athleteName);
 
             // get summary activities for the current athlete
             $.ajax({
@@ -312,7 +360,7 @@
     </style>
 
 </head>
-<body data-athleteId="athleteIdPlaceholder">
+<body data-athleteId="athleteIdPlaceholder", data-athleteName="athleteNamePlaceholder">
     <p>My Strava Data</p>
 
     <div id="SummaryActivities">
@@ -341,11 +389,11 @@
 
     <div id="DetailedActivity">
         <p id="activityName"></p>
-        <table style="width:660px" id="DetailedActivityTable">
+        <table style="width:790px" id="DetailedActivityTable">
             <col style="width:400px">
             <col style="width:130px">
             <col style="width:130px">
-            <col style="width:130px">
+            <col style="width:260px">
             <col style="width:130px">
             <col style="width:130px">
 

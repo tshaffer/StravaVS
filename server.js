@@ -23,12 +23,59 @@ function getMySqlDateTime(isoDateTime) {
     if (day.length == 1) {
         day = "0" + day;
     }
-    return year + "-" + month + "-" + day;
+
+    hours = String(jsDateTime.getHours());
+    if (hours.length == 1) {
+        hours = "0" + hours;
+    }
+
+    minutes = String(jsDateTime.getMinutes());
+    if (minutes.length == 1) {
+        minutes = "0" + minutes;
+    }
+
+    seconds = String(jsDateTime.getSeconds());
+    if (seconds.length == 1) {
+        seconds = "0" + seconds;
+    }
+
+    return year + "-" + month + "-" + day + " " + hours + ":" + minutes + ":" + seconds;
+}
+
+function getFriends(responseData) {
+
+    console.log("invoked getFriends");
+
+    var options = {
+        host: 'www.strava.com',
+        path: '/api/v3/athlete/friends',
+        port: 443,
+        headers: {
+            'Authorization': 'Bearer ' + responseData.accessToken
+        }
+    };
+
+    var str = ""
+
+    https.get(options, function (res) {
+        //console.log('STATUS: ' + res.statusCode);
+        //console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+        res.on('data', function (d) {
+            str += d;
+        });
+        res.on('end', function () {
+            friends = JSON.parse(str);
+            sendFriendsResponse(responseData, friends);
+        });
+    });
+
 }
 
 // get segment efforts for a friend
-function getSegmentEffortsForAthlete(response, segmentId, athleteId) {
-    console.log('getSegmentEffortsForAthlete invoked, segmentId = ' + segmentId + ', athleteId = ' + athleteId);
+function getSegmentEffortsForAthlete(responseData, segmentId, athleteId, athleteName) {
+    console.log('getSegmentEffortsForAthlete invoked, segmentId = ' + segmentId + ', athleteId = ' + athleteId + ', athleteName = ' + athleteName);
+    console.log('getSegmentEffortsForAthlete invoked, responseData.athleteName = ' + responseData.athlete.firstName + " " + responseData.athlete.lastName);
 
     var options = {
         host: 'www.strava.com',
@@ -57,11 +104,11 @@ function getSegmentEffortsForAthlete(response, segmentId, athleteId) {
 
             data = JSON.parse(str);
 
-            response.writeHead(
+            responseData.serverResponse.writeHead(
                 200,
                 { "content-type": 'application/json' }
                 );
-            response.end(JSON.stringify(data, null, 3));
+            responseData.serverResponse.end(JSON.stringify(data, null, 3));
         });
 
     }).on('error', function () {
@@ -73,7 +120,6 @@ function getSegmentEffortsForAthlete(response, segmentId, athleteId) {
 function getEfforts(responseData) {
     console.log("getEfforts invoked");
 
-    responseData.detailedEffortsStruct = {};
     responseData.segmentEffortStruct = {};
     responseData.segmentStruct = {};
 
@@ -447,6 +493,13 @@ function getAuthenticatedAthlete(responseData, nextFunction) {
               console.log("retrieved accessToken " + accessToken);
               responseData.accessToken = accessToken;
 
+              responseData.athlete = {};
+              responseData.athlete.id = athleteId;
+              //responseData.athlete.name = rows[0].athleteId;
+              responseData.athlete.firstName = rows[0].firstname;
+              responseData.athlete.lastName = rows[0].lastname;
+              responseData.athlete.email = rows[0].email;
+
               // response successful, invoke next function
               nextFunction(responseData);
           }
@@ -751,11 +804,17 @@ function performTokenExchange(response, code) {
             authenticationData = {};
             authenticationData.accessToken = data.access_token;
             authenticationData.athleteId = data.athlete.id;
+            authenticationData.athlete = {};
+            authenticationData.athlete.firstname = data.athlete.firstname;
+            authenticationData.athlete.lastname = data.athlete.lastname;
+            authenticationData.athlete.email = data.athlete.email;
 
             console.log("the authentication data is");
             console.log(authenticationData);
 
             // add the authentication data to the data base if it's not already there
+
+// is the use of the authentication data safe?
 
             // is the athlete already in the database?
             console.log("query for existing athlete entry");
@@ -772,9 +831,9 @@ function performTokenExchange(response, code) {
                       console.log("add authentication data to the db");
 
                       db.query(
-                        "INSERT INTO authenticatedathlete (athleteId, authorizationKey) " +
-                        " VALUES (?, ?)",
-                        [authenticationData.athleteId.toString(), authenticationData.accessToken],
+                        "INSERT INTO authenticatedathlete (athleteId, authorizationKey, firstname, lastname, email) " +
+                        " VALUES (?, ?, ?, ?, ?)",
+                        [authenticationData.athleteId.toString(), authenticationData.accessToken, authenticationData.athlete.firstname, authenticationData.athlete.lastname, authenticationData.athlete.email],
                         function (err) {
                             if (err) throw err;
                             console.log("added authenticated athlete successfully");
@@ -804,6 +863,7 @@ function performTokenExchange(response, code) {
                             console.log("search for data-athlete");
                             var dataAsStr = String(data);
                             var finalDataAsStr = dataAsStr.replace("athleteIdPlaceholder", authenticationData.athleteId);
+                            finalDataAsStr = finalDataAsStr.replace("athleteNamePlaceholder", authenticationData.athlete.firstname + " " + authenticationData.athlete.lastname);
                             sendFile(response, absPath, finalDataAsStr);
                         }
                     });
@@ -921,6 +981,14 @@ function sendDetailedEffortsResponse(responseData) {
     );
     responseData.serverResponse.end(JSON.stringify(detailedActivity, null, 3));
 
+}
+
+function sendFriendsResponse(responseData, friends) {
+    responseData.serverResponse.writeHead(
+    200,
+    { "content-type": 'application/json' }
+    );
+    responseData.serverResponse.end(JSON.stringify(friends, null, 3));
 }
 
 function initDB() {
@@ -1065,7 +1133,14 @@ var server = http.createServer(function (request, response) {
     else if (parsedUrl.pathname == '/getSegmentEffortsForAthlete.html') {
         segmentId = parsedUrl.query.segment_id;
         athleteId = parsedUrl.query.athlete_id;
-        getSegmentEffortsForAthlete(response, segmentId, athleteId);
+        athleteName = parsedUrl.query.athlete_name;
+        getSegmentEffortsForAthlete(responseData, segmentId, athleteId, athleteName);
+        return;
+    }
+    else if (parsedUrl.pathname == '/friends') {
+        responseData.athleteId = parsedUrl.query.athleteId;
+        console.log("responseData.athleteId is " + responseData.athleteId);
+        getAuthenticatedAthlete(responseData, getFriends);
         return;
     }
     else if (request.url == '/') {                                      // default to index.html

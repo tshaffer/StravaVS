@@ -525,33 +525,40 @@ function convertDetailedActivity(detailedActivity) {
     convertedActivity.maxSpeed = detailedActivity.max_speed * 2.23694;
     convertedActivity.calories = detailedActivity.calories;
     convertedActivity.startDateTime = getMySqlDateTime(detailedActivity.start_date_local);
+    convertedActivity.startPointLatitude = detailedActivityData.start_latitude;
+    console.log("convertedActivity.startPointLatitude=" + convertedActivity.startPointLatitude);
+    convertedActivity.startPointLongitude = detailedActivityData.start_longitude;
+    convertedActivity.mapPolyline = detailedActivityData.map.polyline;
     return convertedActivity;
 
 }
 
 function addDetailedActivityToDB(detailedActivity) {
 
-    activityId = detailedActivity.id.toString();
-    athleteId = detailedActivity.athlete.id.toString();
-    name = detailedActivity.name;
-    description = detailedActivity.description;
+    var activityId = detailedActivity.id.toString();
+    var athleteId = detailedActivity.athlete.id.toString();
+    var name = detailedActivity.name;
+    var description = detailedActivity.description;
     if (!description) {
         description = "";
     }
-    distance = detailedActivity.distance * 0.000621371;
-    movingTime = detailedActivity.moving_time;
-    elapsedTime = detailedActivity.elapsed_time;
-    totalElevationGain = Math.floor(detailedActivity.total_elevation_gain * 3.28084);
-    averageSpeed = detailedActivity.average_speed * 2.23694;
-    maxSpeed = detailedActivity.max_speed * 2.23694;
-    calories = detailedActivity.calories;
-    startDateTime = getMySqlDateTime(detailedActivity.start_date_local);
+    var distance = detailedActivity.distance * 0.000621371;
+    var movingTime = detailedActivity.moving_time;
+    var elapsedTime = detailedActivity.elapsed_time;
+    var totalElevationGain = Math.floor(detailedActivity.total_elevation_gain * 3.28084);
+    var averageSpeed = detailedActivity.average_speed * 2.23694;
+    var maxSpeed = detailedActivity.max_speed * 2.23694;
+    var calories = detailedActivity.calories;
+    var startDateTime = getMySqlDateTime(detailedActivity.start_date_local);
     console.log("mySql datetime = " + startDateTime);
+    var startPointLatitude = detailedActivity.start_latitude;
+    var startPointLongitude = detailedActivity.start_longitude;
+    var mapPolyline = detailedActivity.map.polyline;
 
     db.query(
-      "INSERT INTO detailedactivity (activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories) " +
-      " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories],
+      "INSERT INTO detailedactivity (activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories, startPointLatitude, startPointLongitude, mapPolyline) " +
+      " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories, startPointLatitude, startPointLongitude, mapPolyline],
       function (err) {
           if (err) throw err;
           console.log("added detailed activity successfully");
@@ -589,7 +596,20 @@ function fetchDetailedActivityFromStrava(responseData, detailedActivityIdToFetch
 
             // convert string from server into JSON object
             detailedActivityData = JSON.parse(str);
+
+            //console.log("detailedActivity from server for id " + detailedActivityIdToFetchFromServer);
             //console.log(detailedActivityData);
+            var startPointLatitude = detailedActivityData.start_latitude;
+            //var startPointLongitude = detailedActivityData.start_longitude;
+            //console.log("type of startPointLatitude is " + typeof startPointLatitude);
+            console.log("startPointLatitude=" + startPointLatitude);
+            //console.log("startPointLongitude=" + startPointLongitude);
+            var mapPolyline = detailedActivityData.map.polyline;
+            console.log("mapPolyline=" + mapPolyline);
+            //var mapSummaryPolyline = detailedActivityData.map.summary_polyline;
+            //console.log("mapSummaryPolyline=" + mapSummaryPolyline);
+
+
 
             // convert from Strava JSON format into the format digestible by the db
             convertedActivity = convertDetailedActivity(detailedActivityData);
@@ -685,7 +705,6 @@ function getDetailedActivitiesInDB(responseData, summaryActivitiesFromStrava) {
 
         // create a list of all summary activities that came from the server - we'll fetch detailed versions of a subset of these from the server
         var detailedActivitiesToFetchFromServer = {};
-        //for (i = 0; i < summaryActivitiesFromStrava.length; i++) {
         for (var i in summaryActivitiesFromStrava) {
             detailedActivitiesToFetchFromServer[summaryActivitiesFromStrava[i].id] = summaryActivitiesFromStrava[i].id;
         }

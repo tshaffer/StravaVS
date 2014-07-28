@@ -128,8 +128,16 @@
                 var decodedPath = google.maps.geometry.encoding.decodePath(pathToDecode);
                 var decodedLevels = decodeLevels("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
 
-                console.log("decodedPath is:");
-                console.log(decodedPath);
+                //console.log("decodedPath is:");
+                //console.log(decodedPath);
+
+                var bounds = new google.maps.LatLngBounds();
+                $.each(decodedPath, function (index, location) {
+                    var myLatLng = new google.maps.LatLng(location.k, location.B);
+                    bounds.extend(myLatLng);
+                });
+
+                map.fitBounds(bounds);
 
                 var setRegion = new google.maps.Polyline({
                     path: decodedPath,
@@ -139,7 +147,6 @@
                     strokeWeight: 2,
                     map: map
                 });
-
 
 
 

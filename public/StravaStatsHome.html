@@ -26,24 +26,57 @@
 
       html { height: 100% } 
       body { height: 100%; margin: 0; padding: 0 }
-      /*#map-canvas { height: 50% }*/
-      
+      /*#map-canvas { height: 50% }
+      #DetailedActivity { height: 40% }*/
+
         #map-canvas {
+            position: absolute;
+            top: 100px;
+            width: 1800px;
+            height: 400px;
+        }
+
+        #RideSummary {
+            position: absolute;
+            top: 0px;
+            width: 1800px;
+            height: 50px;
+            display: none;
+        }
+
+        #DetailedActivity {
+            position: absolute;
+            top: 500px;
+            width: 1800px;
+            height: 800px;
+        }
+
+        /*#map-canvas {
+            position: absolute;
+            top: 800px;
+            width: 1800px;
+            height: 600px;
+        }
+
+        #DetailedActivity {
+            position: absolute;
+            top: 0px;
+            width: 1800px;
+            height: 800px;
+        }*/
+        /*#map-canvas {
             float:left;
             width:600px;
             height:800px;
             display: none;
         }
-        /*#SummaryActivities {
-            float:right;
-            width:900px;
-            height:800px;
-        }*/
+
         #DetailedActivity {
             float:right;
             width:900px;
             height:800px;
-        }
+        }*/
+
         table,th,td
         {
             border:1px solid black;
@@ -360,6 +393,7 @@
 
             function showActivityDetails(event) {
                 $('#SummaryActivities').hide();
+                $('#RideSummary').show();
                 $('#DetailedActivity').show();
                 $('#map-canvas').show();
             }
@@ -463,6 +497,7 @@
             function showActivitiesTable() {
                 $('#SegmentEffortsFriends').hide();
                 $('#DetailedActivity').hide();
+                $('#RideSummary').hide();
                 $('#SummaryActivities').show();
             }
 
@@ -519,11 +554,13 @@
 
 </head>
 <body data-athleteId="athleteIdPlaceholder", data-athleteName="athleteNamePlaceholder">
-    <p>My Strava Data</p>
+    <!--<p>My Strava Data</p>-->
 
     <div class="background" style="position: relative; width:1900px; height:900px;">
 
-        <p>More Strava Data</p>
+        <div id="RideSummary">
+            <p>This is where the ride summary info goes</p>
+        </div>
 
         <div id="SummaryActivities">
         <table style="width:875px" id="myTable">
@@ -548,6 +585,7 @@
 
         </table>
     </div>
+
 
     <div id="DetailedActivity">
         <p id="activityName"></p>

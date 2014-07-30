@@ -6,42 +6,14 @@
 
     <style>
 
-        /*table,th,td
-        {
-            border:1px solid black;
-            border-collapse:collapse;
-        }
-        th,td
-        {
-            padding:5px;
-        }
-
-        #DetailedActivity {
-            display: none;
-        }
-
-        #SegmentEffortsFriends {
-            display: none;
-        }*/
-
       html { height: 100% } 
       body { height: 100%; margin: 0; padding: 0 }
-      /*#map-canvas { height: 50% }
-      #DetailedActivity { height: 40% }*/
 
         #map-canvas {
             position: absolute;
-            top: 100px;
+            top: 77px;
             width: 1800px;
             height: 400px;
-        }
-
-        #RideSummary {
-            position: absolute;
-            top: 0px;
-            width: 1800px;
-            height: 50px;
-            display: none;
         }
 
         #DetailedActivity {
@@ -50,32 +22,6 @@
             width: 1800px;
             height: 800px;
         }
-
-        /*#map-canvas {
-            position: absolute;
-            top: 800px;
-            width: 1800px;
-            height: 600px;
-        }
-
-        #DetailedActivity {
-            position: absolute;
-            top: 0px;
-            width: 1800px;
-            height: 800px;
-        }*/
-        /*#map-canvas {
-            float:left;
-            width:600px;
-            height:800px;
-            display: none;
-        }
-
-        #DetailedActivity {
-            float:right;
-            width:900px;
-            height:800px;
-        }*/
 
         table,th,td
         {
@@ -94,6 +40,60 @@
         #SegmentEffortsFriends {
             display: none;
         }
+
+        #RideSummary {
+            position: absolute;
+            top: 0px;
+            width: 1800px;
+            height: 55px;
+            display: none;
+        }
+
+        #rideSummaryTable {
+            border: 0px solid black;
+            border-collapse:collapse;
+            width:800px;
+        }
+
+        /*#rideSummaryTable td, #rideSummaryTable th {*/
+        #rideSummaryTable td {
+            border: 0px solid black;
+            border-collapse:collapse;
+            /*padding-top:4px;
+            padding-right:10px;
+            padding-bottom:4px;
+            padding-left:10px;*/
+        }
+
+        /*#rideSummaryTable th {
+            border: 0px solid black;
+            border-collapse:collapse;
+        }*/
+
+        #RideSummaryDataRow {
+            font-weight: bold;
+            font-size:150%;
+        }
+
+        #RideSummaryDataRow td {
+            padding-top:4px;
+            padding-right:10px;
+            padding-bottom:4px;
+            padding-left:10px;
+        }
+
+        #RowSummaryLabels {
+            font-size:80%;
+            color: lightgray;
+        }
+
+        #RowSummaryLabels td {
+            padding-top:4px;
+            padding-right:10px;
+            padding-bottom:0px;
+            padding-left:10px;
+        }
+
 
     </style>
 
@@ -134,8 +134,9 @@
                 var myOptions = {
                     zoom: 14,
                     center: myLatlng,
-                    mapTypeId: google.maps.MapTypeId.ROADMAP
-                }
+                    //mapTypeId: google.maps.MapTypeId.ROADMAP
+                    mapTypeId: google.maps.MapTypeId.TERRAIN
+            }
                 var map = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
 
                 //var decodedPath = google.maps.geometry.encoding.decodePath('}~kvHmzrr@ba\\hnc@jiu@r{Zqx~@hjp@pwEhnc@zhu@zflAbxn@fhjBvqHroaAgcnAp}gAeahAtqGkngAinc@_h|@r{Zad\\y|_D}_y@swg@ysg@}llBpoZqa{@xrw@~eBaaX}{uAero@uqGadY}nr@`dYs_NquNgbjAf{l@|yh@bfc@}nr@z}q@i|i@zgz@r{ZhjFr}gApob@ff}@laIsen@dgYhdPvbIren@');
@@ -382,8 +383,46 @@
 
             }
 
+            function buildRideSummary() {
+
+                activity = selectedActivity;
+
+                console.log("buildRideSummary invoked, activity is ");
+                console.log(activity);
+
+                // activityName
+                activityName = activity.name;
+
+                // ride date
+                //d = new Date(activity.start_date_local);
+                d = new Date(activity.startDateTime);
+                date = d.toLocaleString();
+
+                // distance
+                miles = activity.distance;
+
+                // riding time
+                movingTime = getMovingTime(activity.movingTime);
+
+                // elevation gain
+                elevationGain = activity.totalElevationGain;
+
+                // average speed (meters per second)
+                mph = activity.averageSpeed;
+
+                calories = activity.calories;
+
+                $("#rideName").html(activityName);
+                $("#rideDistance").text(miles.toFixed(1) + " mi");
+                $("#rideTime").text(movingTime);
+                $("#rideElevation").text(elevationGain + "ft");
+                $("#rideSpeed").text(mph.toFixed(1) + "mph");
+                $("#rideCalories").text(calories);
+
+            }
+
             function buildSegmentEffortsTable(activity) {
-                $('#activityName').html("Ride name is " + activity.name);
+                //$('#activityName').html("Ride name is " + activity.name);
 
                 detailedEfforts = activity.detailedEfforts;
                 $.each(detailedEfforts, function (index, detailedEffort) {
@@ -412,6 +451,8 @@
                     console.log("success");
                     console.log(textStatus);
                     console.log(data);
+
+                    buildRideSummary();
 
                     buildSegmentEffortsTable(data);
 
@@ -556,10 +597,31 @@
 <body data-athleteId="athleteIdPlaceholder", data-athleteName="athleteNamePlaceholder">
     <!--<p>My Strava Data</p>-->
 
-    <div class="background" style="position: relative; width:1900px; height:900px;">
+    <!--<div class="background" style="position: relative; width:1900px; height:900px;">-->
+    <div class="background" style="position: relative; width:1900px;">
 
         <div id="RideSummary">
-            <p>This is where the ride summary info goes</p>
+          <table id="rideSummaryTable">
+
+            <tr id="RideSummaryDataRow">
+                <td id="rideName"></td>
+                <td id="rideDistance"></td>
+                <td id="rideTime"></td>        
+                <td id="rideElevation"></td>
+                <td id="rideSpeed"></td>
+                <td id="rideCalories"></td>
+            </tr>
+
+            <tr id="RowSummaryLabels">
+                <td>date-time</td>
+                <td>Distance</td>
+                <td>Time</td>        
+                <td>Elevation</td>
+                <td>Speed</td>
+                <td>Calories</td>
+            </tr>
+
+          </table>
         </div>
 
         <div id="SummaryActivities">

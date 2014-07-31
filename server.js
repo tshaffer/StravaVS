@@ -94,8 +94,8 @@ function allEfforts(responseData) {
     var str = ""
 
     https.get(options, function (res) {
-        console.log('STATUS: ' + res.statusCode);
-        console.log('HEADERS: ' + JSON.stringify(res.headers));
+        //console.log('STATUS: ' + res.statusCode);
+        //console.log('HEADERS: ' + JSON.stringify(res.headers));
 
         res.on('data', function (d) {
             console.log("chunk received");
@@ -447,7 +447,7 @@ function addSegmentEffortToDB(segmentEffort) {
     name = segmentEffort.name;
     movingTime = segmentEffort.moving_time;
     elapsedTime = segmentEffort.elapsed_time;
-    startDateTime = getMySqlDateTime(segmentEffort.start_date_local);
+    startDateTime = getMySqlDateTime(segmentEffort.start_date);
     distance = segmentEffort.distance * 0.000621371;
 
     db.query(
@@ -524,7 +524,8 @@ function convertDetailedActivity(detailedActivity) {
     convertedActivity.averageSpeed = detailedActivity.average_speed * 2.23694;
     convertedActivity.maxSpeed = detailedActivity.max_speed * 2.23694;
     convertedActivity.calories = detailedActivity.calories;
-    convertedActivity.startDateTime = getMySqlDateTime(detailedActivity.start_date_local);
+    //convertedActivity.startDateTime = getMySqlDateTime(detailedActivity.start_date_local);
+    convertedActivity.startDateTime = getMySqlDateTime(detailedActivity.start_date);
     convertedActivity.startPointLatitude = detailedActivityData.start_latitude;
     console.log("convertedActivity.startPointLatitude=" + convertedActivity.startPointLatitude);
     convertedActivity.startPointLongitude = detailedActivityData.start_longitude;
@@ -549,7 +550,7 @@ function addDetailedActivityToDB(detailedActivity) {
     var averageSpeed = detailedActivity.average_speed * 2.23694;
     var maxSpeed = detailedActivity.max_speed * 2.23694;
     var calories = detailedActivity.calories;
-    var startDateTime = getMySqlDateTime(detailedActivity.start_date_local);
+    var startDateTime = getMySqlDateTime(detailedActivity.start_date);
     console.log("mySql datetime = " + startDateTime);
     var startPointLatitude = detailedActivity.start_latitude;
     var startPointLongitude = detailedActivity.start_longitude;
@@ -597,8 +598,9 @@ function fetchDetailedActivityFromStrava(responseData, detailedActivityIdToFetch
             // convert string from server into JSON object
             detailedActivityData = JSON.parse(str);
 
-            //console.log("detailedActivity from server for id " + detailedActivityIdToFetchFromServer);
-            //console.log(detailedActivityData);
+            console.log("detailedActivity from server for id " + detailedActivityIdToFetchFromServer);
+            console.log(detailedActivityData);
+
             var startPointLatitude = detailedActivityData.start_latitude;
             //var startPointLongitude = detailedActivityData.start_longitude;
             //console.log("type of startPointLatitude is " + typeof startPointLatitude);

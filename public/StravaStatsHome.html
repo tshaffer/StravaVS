@@ -37,7 +37,37 @@
             display: none;
         }
 
-        #SegmentEffortsFriends {
+        #DetailedActivity th {
+            background-color: #c8c8c8;
+            border: 0px solid black;
+            border-collapse:collapse;
+        }
+
+        #DetailedActivityTable {
+            border: 0px solid black;
+            border-collapse:collapse;
+        }
+
+        /*table.hoverTable tr:hover td {
+            background-color: #FEFEFE;
+        }
+        #DetailedActivity tr:hover {
+          background-color: lightyellow;
+        }*/
+
+        #DetailedActivityTable tr {
+            border-bottom: 1px solid lightgray;
+            /*border-collapse:collapse;*/
+        }
+
+        #DetailedActivityTable td {
+            text-align: center;
+            background-color: #fcfcfc;
+            border: 0px solid black;
+            border-collapse:collapse;
+        }
+
+       #SegmentEffortsFriends {
             display: none;
         }
 
@@ -56,20 +86,10 @@
             width:800px;
         }
 
-        /*#rideSummaryTable td, #rideSummaryTable th {*/
         #rideSummaryTable td {
             border: 0px solid black;
             border-collapse:collapse;
-            /*padding-top:4px;
-            padding-right:10px;
-            padding-bottom:4px;
-            padding-left:10px;*/
         }
-
-        /*#rideSummaryTable th {
-            border: 0px solid black;
-            border-collapse:collapse;
-        }*/
 
         #RideSummaryDataRow {
             font-weight: bold;
@@ -85,7 +105,6 @@
 
         #RowSummaryLabels {
             font-size:80%;
-            /*color: lightgray;*/
             color: #a0a0a0;
         }
 
@@ -374,7 +393,7 @@
                 // elevation gain
                 var elevationGain = detailedEffort.totalElevationGain;
 
-                rowToAdd = '<tr><td>' + name + '</td><td>' + movingTime + '</td><td>' + distanceInMiles.toFixed(1) + 'mi</td><td>' + speed.toFixed(1) + 'mph</td><td>' + averageGrade + '%</td><td>' + elevationGain.toFixed(0) + ' feet</td><td>' + "<input id='" + segmentId.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
+                rowToAdd = "<tr><td>" + name + "</td><td>" + movingTime + "</td><td>" + distanceInMiles.toFixed(1) + " mi</td><td>" + speed.toFixed(1) + " mph</td><td>" + averageGrade + "%</td><td>" + elevationGain.toFixed(0) + " ft</td><td>" + "<input id='" + segmentId.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
                 $('#DetailedActivityTable').append(rowToAdd);
 
                 // add button handler to show friends' result for this segment
@@ -650,15 +669,8 @@
 
 
     <div id="DetailedActivity">
-        <p id="activityName"></p>
-        <table style="width:790px" id="DetailedActivityTable">
-<!--            <col style="width:400px">
-            <col style="width:130px">
-            <col style="width:130px">
-            <col style="width:260px">
-            <col style="width:130px">
-            <col style="width:130px">
--->
+        <!--<p id="activityName"></p>-->
+        <table id="DetailedActivityTable" class="hoverTable">
             <tr>
                 <th>Name</th>
                 <th>Time</th>        

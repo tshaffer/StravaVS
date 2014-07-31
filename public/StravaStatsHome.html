@@ -7,7 +7,7 @@
     <style>
 
       html { height: 100% } 
-      body { height: 100%; margin: 0; padding: 0 }
+      body { height: 100%; margin: 0; padding: 0; background-color: #f2f2f2 }
 
         #map-canvas {
             position: absolute;
@@ -47,6 +47,7 @@
             width: 1800px;
             height: 55px;
             display: none;
+            background-color: #f2f2f2;
         }
 
         #rideSummaryTable {
@@ -84,7 +85,8 @@
 
         #RowSummaryLabels {
             font-size:80%;
-            color: lightgray;
+            /*color: lightgray;*/
+            color: #a0a0a0;
         }
 
         #RowSummaryLabels td {
@@ -351,30 +353,28 @@
 
             function buildSegmentEffortsRow(detailedEffort) {
 
-                segmentId = detailedEffort.segmentId;
-                segmentEffortId = detailedEffort.segmentEffortId;
+                var segmentId = detailedEffort.segmentId;
+                var segmentEffortId = detailedEffort.segmentEffortId;
 
                 // name
-                name = detailedEffort.segmentEffortName;
+                var name = detailedEffort.segmentEffortName;
 
                 // time
-                movingTime = getMovingTime(detailedEffort.movingTime);
+                var movingTime = getMovingTime(detailedEffort.movingTime);
 
                 // distance
-                distanceInMiles = detailedEffort.segmentEffortDistance;
+                var distanceInMiles = detailedEffort.segmentEffortDistance;
 
-                // start date/time
-                d = new Date(detailedEffort.startDateTime);
-                //startDateTime = d.toDateString();
-                startDateTime = d.toLocaleString();
+                // speed
+                var speed = detailedEffort.segmentEffortDistance / (detailedEffort.movingTime / 3600);
 
                 // average grade
-                averageGrade = detailedEffort.averageGrade;
+                var averageGrade = detailedEffort.averageGrade;
 
                 // elevation gain
-                elevationGain = detailedEffort.totalElevationGain;
+                var elevationGain = detailedEffort.totalElevationGain;
 
-                rowToAdd = '<tr><td>' + name + '</td><td>' + movingTime + '</td><td>' + distanceInMiles.toFixed(1) + '</td><td>' + startDateTime + '</td><td>' + averageGrade + '%</td><td>' + elevationGain.toFixed(0) + ' feet</td><td>' + "<input id='" + segmentId.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
+                rowToAdd = '<tr><td>' + name + '</td><td>' + movingTime + '</td><td>' + distanceInMiles.toFixed(1) + 'mi</td><td>' + speed.toFixed(1) + 'mph</td><td>' + averageGrade + '%</td><td>' + elevationGain.toFixed(0) + ' feet</td><td>' + "<input id='" + segmentId.toString() + "' type='submit' value='Show friends'/>" + '</td></tr>';
                 $('#DetailedActivityTable').append(rowToAdd);
 
                 // add button handler to show friends' result for this segment
@@ -418,7 +418,7 @@
                 $("#rideElevation").text(elevationGain + "ft");
                 $("#rideSpeed").text(mph.toFixed(1) + "mph");
                 $("#rideCalories").text(calories);
-
+                $("#rideDateTime").html(date);
             }
 
             function buildSegmentEffortsTable(activity) {
@@ -605,18 +605,18 @@
 
             <tr id="RideSummaryDataRow">
                 <td id="rideName"></td>
-                <td id="rideDistance"></td>
                 <td id="rideTime"></td>        
                 <td id="rideElevation"></td>
+                <td id="rideDistance"></td>
                 <td id="rideSpeed"></td>
                 <td id="rideCalories"></td>
             </tr>
 
             <tr id="RowSummaryLabels">
-                <td>date-time</td>
-                <td>Distance</td>
+                <td id="rideDateTime"></td>
                 <td>Time</td>        
                 <td>Elevation</td>
+                <td>Distance</td>
                 <td>Speed</td>
                 <td>Calories</td>
             </tr>
@@ -652,18 +652,18 @@
     <div id="DetailedActivity">
         <p id="activityName"></p>
         <table style="width:790px" id="DetailedActivityTable">
-            <col style="width:400px">
+<!--            <col style="width:400px">
             <col style="width:130px">
             <col style="width:130px">
             <col style="width:260px">
             <col style="width:130px">
             <col style="width:130px">
-
+-->
             <tr>
                 <th>Name</th>
                 <th>Time</th>        
                 <th>Distance</th>
-                <th>Start Date/Time</th>
+                <th>Speed</th>
                 <th>Average Grade</th>
                 <th>Elevation Gain</th>
             </tr>

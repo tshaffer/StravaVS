@@ -119,6 +119,7 @@
     </style>
 
     <script src="js/jquery-2.1.1.min.js"></script>
+    <script src="js/jquery.tablesorter.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=drawing,geometry&key=AIzaSyAQMkpxb9BOWSzHYvNhJz9LZuZqGp0toF4"></script>
 
     <script>
@@ -143,6 +144,8 @@
                 return decodedLevels;
             }
 
+            //$("#myTable").tablesorter();
+            $("#myTable").tablesorter({ sortList: [[0, 0], [1, 0]] });
 
             function initializeMap(activity) {
                 console.log("initializeMap: activity is");
@@ -644,15 +647,16 @@
         </div>
 
         <div id="SummaryActivities">
-        <table style="width:875px" id="myTable">
-            <col style="width:130px">
+        <table style="width:875px" id="myTable" class="tablesorter">
+<!--            <col style="width:130px">
             <col style="width:200px">
             <col style="width:100px">
             <col style="width:65px">
             <col style="width:65px">
             <col style="width:80px">
             <col style="width:80px">
-            <col style="width:80px">
+            <col style="width:80px">-->
+<thead> 
         <tr>
             <th>Date</th>
             <th>Name</th>
@@ -663,6 +667,10 @@
             <th>Calories</th>
             <th></th>
         </tr>
+<thead />
+<tbody>
+
+</tbody>
 
         </table>
     </div>

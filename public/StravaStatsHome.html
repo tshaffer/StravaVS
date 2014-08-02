@@ -268,9 +268,6 @@
                 console.log(friendId);
                 console.log(athleteName);
 
-                //console.log("was athletes shrunk?");
-                //console.log(athletes);
-
                 // get summary activities for the specified athlete
                 $.ajax({
                     url: 'http://localHost:8080/allEfforts',
@@ -329,7 +326,9 @@
 
                     getSummarySegmentEfforts(event.data.id, event.data.name);
 
-                    $('#DetailedActivity').hide();         // show the segment efforts table
+                    $('#RideSummary').hide();               // hide the summary, map, and segment efforts table
+                    $('#map-canvas').hide();
+                    $('#DetailedActivity').hide();         
                     $('#SegmentEffortsFriends').show();    // show the friends segment efforts table
 
                 });
@@ -636,61 +635,61 @@
         </div>
 
         <div id="SummaryActivities">
-        <table style="width:875px" id="activitiesTable">
-            <col style="width:130px">
-            <col style="width:200px">
-            <col style="width:100px">
-            <col style="width:65px">
-            <col style="width:65px">
-            <col style="width:80px">
-            <col style="width:80px">
-            <col style="width:80px">
-        <tr>
-            <th class="startDateTime">Date</th>
-            <th class="name">Name</th>
-            <th class="movingTime">Riding Time</th>        
-            <th class="distance">Distance</th>
-            <th class="totalElevationGain">Elevation</th>
-            <th class="averageSpeed">Average Speed</th>
-            <th class="calories">Calories</th>
-            <th></th>
-        </tr>
+            <table style="width:875px" id="activitiesTable">
+                <col style="width:130px">
+                <col style="width:200px">
+                <col style="width:100px">
+                <col style="width:65px">
+                <col style="width:65px">
+                <col style="width:80px">
+                <col style="width:80px">
+                <col style="width:80px">
+                <tr>
+                    <th class="startDateTime">Date</th>
+                    <th class="name">Name</th>
+                    <th class="movingTime">Riding Time</th>        
+                    <th class="distance">Distance</th>
+                    <th class="totalElevationGain">Elevation</th>
+                    <th class="averageSpeed">Average Speed</th>
+                    <th class="calories">Calories</th>
+                    <th></th>
+                </tr>
 
-        </table>
-    </div>
+            </table>
+     </div>
 
 
-    <div id="DetailedActivity">
-        <!--<p id="activityName"></p>-->
-        <table id="DetailedActivityTable" class="hoverTable">
-            <tr>
-                <th>Name</th>
-                <th>Time</th>        
-                <th>Distance</th>
-                <th>Speed</th>
-                <th>Average Grade</th>
-                <th>Elevation Gain</th>
-            </tr>
-        </table>
-    </div>
+        <div id="DetailedActivity">
+            <!--<p id="activityName"></p>-->
+            <table id="DetailedActivityTable" class="hoverTable">
+                <tr>
+                    <th>Name</th>
+                    <th>Time</th>        
+                    <th>Distance</th>
+                    <th>Speed</th>
+                    <th>Average Grade</th>
+                    <th>Elevation Gain</th>
+                </tr>
+            </table>
+        </div>
+
+        <div id="SegmentEffortsFriends">
+            <p id="effortName"></p>
+            <table style="width:680px" id="SegmentEffortsFriendsTable">
+                <col style="width:400px">
+                <col style="width:130px">
+                <col style="width:150px">
+
+                <tr>
+                    <th>Name</th>
+                    <th>Time</th>        
+                    <th>Date</th>        
+                </tr>
+            </table>
+        </div>
 
         <div id="map-canvas"</div>
 
-
-    <div id="SegmentEffortsFriends">
-        <p id="effortName"></p>
-        <table style="width:680px" id="SegmentEffortsFriendsTable">
-            <col style="width:400px">
-            <col style="width:130px">
-            <col style="width:150px">
-
-            <tr>
-                <th>Name</th>
-                <th>Time</th>        
-                <th>Date</th>        
-            </tr>
-        </table>
-    </div>
     </div>
 </body>
 </html>

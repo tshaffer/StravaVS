@@ -135,6 +135,9 @@
             var athletes = [];
             var segmentEffortsByAthlete = [];
 
+            var activitiesTableColumnOrders = {};
+            var currentSortColumn;
+
             // google maps code
             function decodeLevels(encodedLevelsString) {
                 var decodedLevels = [];
@@ -163,31 +166,9 @@
             }
                 var map = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
 
-                //var decodedPath = google.maps.geometry.encoding.decodePath('}~kvHmzrr@ba\\hnc@jiu@r{Zqx~@hjp@pwEhnc@zhu@zflAbxn@fhjBvqHroaAgcnAp}gAeahAtqGkngAinc@_h|@r{Zad\\y|_D}_y@swg@ysg@}llBpoZqa{@xrw@~eBaaX}{uAero@uqGadY}nr@`dYs_NquNgbjAf{l@|yh@bfc@}nr@z}q@i|i@zgz@r{ZhjFr}gApob@ff}@laIsen@dgYhdPvbIren@');
-                //var decodedPath = google.maps.geometry.encoding.decodePath("ytmcFveiiVHhAj@xDx@|GJ|AG|@Qn@SVOLgBjA{@\}@`@qA|@y@^OPMVCNCh@BfAPhACZKH]DMF]`@i@`Bc@dAOv@@h@H^@VKbCGXa@z@ANFl@P|@~@|Bj@|@n@l@Z^T`@h@rAHJPRZPvA`@xAj@z@X\N^ZFLAPGNg@\eAJ_ADc@JwAl@mAx@YVKTM|@KLKJ[Hg@Se@a@_@i@a@_@ME{BGcB?g@Dg@JkAf@m@J");
-
-                //The problem was the backslash characters being interpreted (and removed) by javascript. So by the time the encoded string reached the DB, it no longer contained backslashes, making the polyline a completely different polyline. I tried replacing single backslashes with double backslashes: "\" -> "\", but I was having trouble with this until I did the replace over the encode function; like this:                
-                //newRoutePathCoordsStr = google.maps.geometry.encoding.encodePath(newRoutePath).replace(/\\/g, "\\\\");
-
-                //var decodedPath = google.maps.geometry.encoding.decodePath('y{ccFpuphVLj@Bj@D\Tz@NtA?|@Bl@VnA^r@XZLH`@Pl@^RHL@TGNOHOFc@@{@J_@ZaAJQLKHAj@E^IDEn@y@FEFCR?TDd@ThADNHn@Lb@@VC~@SPKb@i@Nc@HIHD|@vAp@r@\f@pAxAxAj@pGrCnA`@L@XEZOVYbBaC^s@f@uBRa@Z[j@Y\Y~CyCLGB?ADPODAXHNP|@zBf@~@Zz@Zf@V\Jb@Tb@?t@JvAC`@WpA?TH`@Xf@RVHV?bAB`@Z~A@R?J]bB@f@p@dC^fBP`@LPRHT@`@I|As@REPDDJNbAf@fBTxED|BDh@Lv@hArERdADt@E`A[tAY`AMt@C\FfACdAD|A^lEDDLBb@G^Fd@BVHHDPRXv@H\LlAF^FLPRHFPDzAE\BPFNLRZDNHp@OpE@z@GzD@VLTTDRELIb@m@Z{ABa@?k@Fm@Xw@TYHEl@Md@EJGTURGJ?f@Rd@\B?BG');
-
-                //var pathToDecode = 'y{ccFpuphVLj@Bj@D\Tz@NtA?|@Bl@VnA^r@XZLH`@Pl@^RHL@TGNOHOFc@@{@J_@ZaAJQLKHAj@E^IDEn@y@FEFCR?TDd@ThADNHn@Lb@@VC~@SPKb@i@Nc@HIHD|@vAp@r@\f@pAxAxAj@pGrCnA`@L@XEZOVYbBaC^s@f@uBRa@Z[j@Y\Y~CyCLGB?ADPODAXHNP|@zBf@~@Zz@Zf@V\Jb@Tb@?t@JvAC`@WpA?TH`@Xf@RVHV?bAB`@Z~A@R?J]bB@f@p@dC^fBP`@LPRHT@`@I|As@REPDDJNbAf@fBTxED|BDh@Lv@hArERdADt@E`A[tAY`AMt@C\FfACdAD|A^lEDDLBb@G^Fd@BVHHDPRXv@H\LlAF^FLPRHFPDzAE\BPFNLRZDNHp@OpE@z@GzD@VLTTDRELIb@m@Z{ABa@?k@Fm@Xw@TYHEl@Md@EJGTURGJ?f@Rd@\B?BG';
-                //var newPathToDecode = pathToDecode.replace(/\\/g, "\\\\");
-                //var decodedPath = google.maps.geometry.encoding.decodePath(newPathToDecode);
-
-                //var pathToDecode = 'y{ccFpuphVLj@Bj@D\\Tz@NtA?|@Bl@VnA^r@XZLH`@Pl@^RHL@TGNOHOFc@@{@J_@ZaAJQLKHAj@E^IDEn@y@FEFCR?TDd@ThADNHn@Lb@@VC~@SPKb@i@Nc@HIHD|@vAp@r@\\f@pAxAxAj@pGrCnA`@L@XEZOVYbBaC^s@f@uBRa@Z[j@Y\\Y~CyCLGB?ADPODAXHNP|@zBf@~@Zz@Zf@V\\Jb@Tb@?t@JvAC`@WpA?TH`@Xf@RVHV?bAB`@Z~A@R?J]bB@f@p@dC^fBP`@LPRHT@`@I|As@REPDDJNbAf@fBTxED|BDh@Lv@hArERdADt@E`A[tAY`AMt@C\\FfACdAD|A^lEDDLBb@G^Fd@BVHHDPRXv@H\\LlAF^FLPRHFPDzAE\\BPFNLRZDNHp@OpE@z@GzD@VLTTDRELIb@m@Z{ABa@?k@Fm@Xw@TYHEl@Md@EJGTURGJ?f@Rd@\\B?BG';
-                //var decodedPath = google.maps.geometry.encoding.decodePath(pathToDecode);
-
-                //var decodedLevels = decodeLevels("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
-                //var decodedLevels = decodeLevels("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
-                //var decodedLevels = decodeLevels("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
-
                 var pathToDecode = activity.mapPolyline;
                 var decodedPath = google.maps.geometry.encoding.decodePath(pathToDecode);
                 var decodedLevels = decodeLevels("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
-
-                //console.log("decodedPath is:");
-                //console.log(decodedPath);
 
                 var bounds = new google.maps.LatLngBounds();
                 $.each(decodedPath, function (index, location) {
@@ -206,26 +187,7 @@
                     map: map
                 });
 
-
-
-
-
-
-
-
-                //// Create the map.
-                //var mapOptions = {
-                //    zoom: 4,
-                //    //zoom: zoom,
-                //    center: new google.maps.LatLng(37.09024, -95.712891),
-                //    //center: new google.maps.LatLng(latitude, longitude),
-                //    mapTypeId: google.maps.MapTypeId.TERRAIN
-                //};
-
-                //map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
             }
-
-            //google.maps.event.addDomListener(window, 'load', initializeMap);
 
             function getDistance(distanceInMeters) {
                 distanceInMiles = distanceInMeters * 0.000621371;
@@ -527,7 +489,7 @@
                 calories = activity.calories;
 
                 rowToAdd = '<tr><td>' + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + calories + '</td><td>' + "<input id='" + activityId + "' type='submit' value='Show details'/>" + '</td></tr>';
-                $('#myTable').append(rowToAdd);
+                $('#activitiesTable').append(rowToAdd);
 
                 // add button handler for this particular activity
                 btnId = "#" + activityId;
@@ -562,45 +524,45 @@
                 $('#SummaryActivities').show();
             }
 
-            function detailedSortByColumn(self) {
-                var sortColumn = self[0].className;
-                console.log("class of selected column is " + self[0].className);
+            function sortAscending(a, b) {
+                if (a[currentSortColumn] < b[currentSortColumn])
+                    return 1;
+                if (a[currentSortColumn] > b[currentSortColumn])
+                    return -1
+                return 0;
+            }
 
-                selectedDetailedEfforts.sort(function (a, b) {
-                    if (a[sortColumn] < b[sortColumn])
-                        return 1;
-                    if (a[sortColumn] > b[sortColumn])
-                        return -1
-                    return 0;
-                });
-
-                $(document).ready(function () {
-                    $("#DetailedActivityTable").find("tr:gt(0)").remove();
-                })
-                buildSegmentEffortsTable(selectedDetailedEfforts);
+            function sortDescending(a, b) {
+                if (a[currentSortColumn] > b[currentSortColumn])
+                    return 1;
+                if (a[currentSortColumn] < b[currentSortColumn])
+                    return -1
+                return 0;
             }
 
             function sortByColumn(self) {
-                //var sortColumn = self[0].id;
-                //console.log("id of selected column is " + self[0].id);
-                var sortColumn = self[0].className;
-                console.log("class of selected column is " + self[0].className);
 
-                currentActivities.sort(function (a, b) {
-                    if (a[sortColumn] < b[sortColumn])
-                        return 1;
-                    if (a[sortColumn] > b[sortColumn])
-                        return -1
-                    return 0;
-                });
+                currentSortColumn = self[0].className;
+
+                var sortOrder = "ascending";
+                var sortFunction = sortAscending;
+
+                if (activitiesTableColumnOrders[currentSortColumn] == "ascending") {
+                    sortOrder = "descending";
+                    sortFunction = sortDescending;
+                }
+
+                currentActivities.sort(sortFunction);
 
                 // supposedly gets table from td
                 //var a = $('td').closest('table');
 
                 $(document).ready(function () {
-                    $("#myTable").find("tr:gt(0)").remove();
+                    $("#activitiesTable").find("tr:gt(0)").remove();
                 })
                 buildActivitiesTable(currentActivities);
+
+                activitiesTableColumnOrders[currentSortColumn] = sortOrder;
             }
 
             // get athleteId
@@ -636,35 +598,11 @@
 
             // table column sort callback
             $("#SummaryActivities th").click(function () {
+                console.log(this);
                 sortByColumn($(this));
-            });
-
-            $("#DetailedActivityTable th").click(function () {
-                detailedSortByColumn($(this));
             });
         });
     </script>
-
-<!--    <style>
-        table,th,td
-        {
-            border:1px solid black;
-            border-collapse:collapse;
-        }
-        th,td
-        {
-            padding:5px;
-        }
-
-        #DetailedActivity {
-            display: none;
-        }
-
-        #SegmentEffortsFriends {
-            display: none;
-        }
-
-    </style>-->
 
 </head>
 <body data-athleteId="athleteIdPlaceholder", data-athleteName="athleteNamePlaceholder">
@@ -698,7 +636,7 @@
         </div>
 
         <div id="SummaryActivities">
-        <table style="width:875px" id="myTable">
+        <table style="width:875px" id="activitiesTable">
             <col style="width:130px">
             <col style="width:200px">
             <col style="width:100px">
@@ -726,12 +664,12 @@
         <!--<p id="activityName"></p>-->
         <table id="DetailedActivityTable" class="hoverTable">
             <tr>
-                <th class="segmentEffortName">Name</th>
-                <th class="movingTime">Time</th>        
-                <th class="segmentEffortDistance">Distance</th>
-                <th class="speed">Speed</th>
-                <th class="averageGrade">Average Grade</th>
-                <th class="totalElevationGain">Elevation Gain</th>
+                <th>Name</th>
+                <th>Time</th>        
+                <th>Distance</th>
+                <th>Speed</th>
+                <th>Average Grade</th>
+                <th>Elevation Gain</th>
             </tr>
         </table>
     </div>

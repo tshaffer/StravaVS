@@ -127,6 +127,9 @@
             var athleteId;
             var athleteName;
 
+            var currentActivities;
+            var selectedDetailedEfforts;
+
             var selectedActivity;
 
             var athletes = [];
@@ -386,6 +389,7 @@
 
                 // speed
                 var speed = detailedEffort.segmentEffortDistance / (detailedEffort.movingTime / 3600);
+                detailedEffort.speed = speed;
 
                 // average grade
                 var averageGrade = detailedEffort.averageGrade;
@@ -440,10 +444,9 @@
                 $("#rideDateTime").html(date);
             }
 
-            function buildSegmentEffortsTable(activity) {
+            function buildSegmentEffortsTable(detailedEfforts) {
                 //$('#activityName').html("Ride name is " + activity.name);
 
-                detailedEfforts = activity.detailedEfforts;
                 $.each(detailedEfforts, function (index, detailedEffort) {
                     buildSegmentEffortsRow(detailedEffort);
                 });
@@ -473,7 +476,8 @@
 
                     buildRideSummary();
 
-                    buildSegmentEffortsTable(data);
+                    selectedDetailedEfforts = data.detailedEfforts;
+                    buildSegmentEffortsTable(data.detailedEfforts);
 
                     initializeMap(selectedActivity);
 
@@ -533,7 +537,6 @@
             function buildActivitiesTable(activities) {
 
                 $.each(activities, function (index, activityElement) {
-                    console.log("activityElement id = " + activityElement.id);
                     buildActivityRow(activityElement);
                 });
             }
@@ -541,8 +544,6 @@
             function sortActivitiesByDate(activities) {
                 $.each(activities, function (index, activity) {
                     activity.dateTime = new Date(activity.startDateTime);
-                    console.log("type of startDateTime is " + typeof activity.startDateTime);
-                    console.log("type of dateTime is " + typeof activity.dateTime);
                 });
 
                 activities.sort(function (a, b) {
@@ -559,6 +560,47 @@
                 $('#DetailedActivity').hide();
                 $('#RideSummary').hide();
                 $('#SummaryActivities').show();
+            }
+
+            function detailedSortByColumn(self) {
+                var sortColumn = self[0].className;
+                console.log("class of selected column is " + self[0].className);
+
+                selectedDetailedEfforts.sort(function (a, b) {
+                    if (a[sortColumn] < b[sortColumn])
+                        return 1;
+                    if (a[sortColumn] > b[sortColumn])
+                        return -1
+                    return 0;
+                });
+
+                $(document).ready(function () {
+                    $("#DetailedActivityTable").find("tr:gt(0)").remove();
+                })
+                buildSegmentEffortsTable(selectedDetailedEfforts);
+            }
+
+            function sortByColumn(self) {
+                //var sortColumn = self[0].id;
+                //console.log("id of selected column is " + self[0].id);
+                var sortColumn = self[0].className;
+                console.log("class of selected column is " + self[0].className);
+
+                currentActivities.sort(function (a, b) {
+                    if (a[sortColumn] < b[sortColumn])
+                        return 1;
+                    if (a[sortColumn] > b[sortColumn])
+                        return -1
+                    return 0;
+                });
+
+                // supposedly gets table from td
+                //var a = $('td').closest('table');
+
+                $(document).ready(function () {
+                    $("#myTable").find("tr:gt(0)").remove();
+                })
+                buildActivitiesTable(currentActivities);
             }
 
             // get athleteId
@@ -584,10 +626,22 @@
 
                 sortActivitiesByDate(data);
 
+                currentActivities = data;
+
                 buildActivitiesTable(data);
                 showActivitiesTable();
             });
 
+            var self;
+
+            // table column sort callback
+            $("#SummaryActivities th").click(function () {
+                sortByColumn($(this));
+            });
+
+            $("#DetailedActivityTable th").click(function () {
+                detailedSortByColumn($(this));
+            });
         });
     </script>
 
@@ -654,13 +708,13 @@
             <col style="width:80px">
             <col style="width:80px">
         <tr>
-            <th>Date</th>
-            <th>Name</th>
-            <th>Riding Time</th>        
-            <th>Distance</th>
-            <th>Elevation</th>
-            <th>Average Speed</th>
-            <th>Calories</th>
+            <th class="startDateTime">Date</th>
+            <th class="name">Name</th>
+            <th class="movingTime">Riding Time</th>        
+            <th class="distance">Distance</th>
+            <th class="totalElevationGain">Elevation</th>
+            <th class="averageSpeed">Average Speed</th>
+            <th class="calories">Calories</th>
             <th></th>
         </tr>
 
@@ -672,12 +726,12 @@
         <!--<p id="activityName"></p>-->
         <table id="DetailedActivityTable" class="hoverTable">
             <tr>
-                <th>Name</th>
-                <th>Time</th>        
-                <th>Distance</th>
-                <th>Speed</th>
-                <th>Average Grade</th>
-                <th>Elevation Gain</th>
+                <th class="segmentEffortName">Name</th>
+                <th class="movingTime">Time</th>        
+                <th class="segmentEffortDistance">Distance</th>
+                <th class="speed">Speed</th>
+                <th class="averageGrade">Average Grade</th>
+                <th class="totalElevationGain">Elevation Gain</th>
             </tr>
         </table>
     </div>

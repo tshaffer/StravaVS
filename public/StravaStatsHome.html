@@ -40,27 +40,27 @@
           background-color: lightyellow;
         }*/
 
-        #DetailedActivity {
+        .detailsActivity {
             display: none;
         }
 
-        #DetailedActivity th {
+        .detailsActivity th {
             background-color: #c8c8c8;
             border: 0px solid black;
             border-collapse:collapse;
         }
 
-        #DetailedActivityTable {
+        .detailsActivityTable {
             border: 0px solid black;
             border-collapse:collapse;
         }
 
-        #DetailedActivityTable tr {
+        .detailsActivityTable tr {
             border-bottom: 1px solid lightgray;
             /*border-collapse:collapse;*/
         }
 
-        #DetailedActivityTable td {
+        .detailsActivityTable td {
             text-align: center;
             background-color: #fcfcfc;
             border: 0px solid black;
@@ -118,36 +118,6 @@
             width: 1800px;
             height: 55px;*/
             background-color: #f2f2f2;
-        }
-
-       #SegmentEffortsSection {
-            display: none;
-            /*position: absolute;
-            top: 500px;
-            width: 1800px;*/
-        }
-
-        #SegmentEffortsSection th {
-            background-color: #c8c8c8;
-            border: 0px solid black;
-            border-collapse:collapse;
-        }
-
-        #SegmentEffortsTable {
-            border: 0px solid black;
-            border-collapse:collapse;
-        }
-
-        #SegmentEffortsTable tr {
-            border-bottom: 1px solid lightgray;
-            /*border-collapse:collapse;*/
-        }
-
-        #SegmentEffortsTable td {
-            text-align: center;
-            background-color: #fcfcfc;
-            border: 0px solid black;
-            border-collapse:collapse;
         }
 
         .hidden {
@@ -740,9 +710,8 @@
      </div>
 
 
-        <div id="DetailedActivity">
-            <!--<p id="activityName"></p>-->
-            <table id="DetailedActivityTable" class="hoverTable">
+        <div id="DetailedActivity" class="detailsActivity">
+            <table id="DetailedActivityTable" class="detailsActivityTable">
                 <tr>
                     <th>Name</th>
                     <th>Time</th>        
@@ -774,8 +743,8 @@
           </table>
         </div>
 
-        <div id="SegmentEffortsSection">
-            <table id="SegmentEffortsTable">
+        <div id="SegmentEffortsSection" class="detailsActivity">
+            <table id="SegmentEffortsTable" class="detailsActivityTable">
                 <tr>
                     <th class="segmentEffortsRiderName">Name</th>
                     <th>Time</th>        

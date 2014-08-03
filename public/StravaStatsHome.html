@@ -159,12 +159,10 @@
 
                 console.log("type of start point latitude is " + typeof activity.startPointLatitude);
 
-                //var myLatlng = new google.maps.LatLng(51.65905179951626, 7.3835928124999555);
                 var myLatlng = new google.maps.LatLng(activity.startPointLatitude, activity.startPointLongitude);
                 var myOptions = {
                     zoom: 14,
                     center: myLatlng,
-                    //mapTypeId: google.maps.MapTypeId.ROADMAP
                     mapTypeId: google.maps.MapTypeId.TERRAIN
             }
                 var map = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
@@ -238,7 +236,7 @@
                 $('#SegmentEffortsFriendsTable').append(rowToAdd);
             }
 
-            function displaySummarySegmentEfforts(segmentName) {
+            function displaySummarySegmentEfforts(segmentName, hideName) {
                 console.log('displaySummarySegmentEfforts invoked, segmentName=' + segmentName);
 
                 $('#effortName').html("Segment is " + segmentName);
@@ -249,22 +247,31 @@
                     $.each(friendEfforts.segmentEffort, function (index, friendEffort) {
                         displayFriendSegmentEffort(friendEffort, friendName);
                     });
-                    $('.segmentEffortsRiderName').addClass('hidden');
+                    if (hideName) {
+                        $('.segmentEffortsRiderName').addClass('hidden');
+                        //$('td:nth-child(1)').hide(); - would also need to do this for th
+                    }
+
+                    $('#RideSummary').hide();               // hide the summary, map, and segment efforts table
+                    $('#map-canvas').hide();
+                    $('#DetailedActivity').hide();
+                    $('#SegmentEffortsFriends').show();    // show the friends segment efforts table
+
                 });
             }
 
-            function getSummarySegmentEfforts(segmentId, segmentName) {
+            function getSummarySegmentEfforts(segmentId, segmentName, hideName) {
                 console.log('getSummarySegmentEfforts invoked:' + segmentId + ' ' + segmentName);
 
                 // get the id of the next athlete
                 if (Object.keys(athletes).length == 0) {
-                    displaySummarySegmentEfforts(segmentName);
+                    displaySummarySegmentEfforts(segmentName, hideName);
                     return;
                 }
 
                 for (var friendId in athletes) {
-                    athleteName = athletes[friendId];  // get an item
-                    delete athletes[friendId];           // delete from aa
+                    athleteName = athletes[friendId];       // get an item
+                    delete athletes[friendId];              // delete from aa
                     break;
                 }
 
@@ -292,7 +299,7 @@
                     summarySegmentEffort.segmentEffort = data;
                     segmentEffortsByAthlete.push(summarySegmentEffort);
 
-                    getSummarySegmentEfforts(segmentId, segmentName);
+                    getSummarySegmentEfforts(segmentId, segmentName, hideName);
                 });
             }
 
@@ -307,18 +314,7 @@
 
                 segmentEffortsByAthlete = [];
 
-                getSummarySegmentEfforts(event.data.id, event.data.name);
-
-                //console.log(".segmentEffortsRiderName");
-                //console.log($('.segmentEffortsRiderName'));
-
-                //$('.segmentEffortsRiderName').addClass('hidden');
-
-                //$('td:nth-child(1)').hide();
-                $('#RideSummary').hide();               // hide the summary, map, and segment efforts table
-                $('#map-canvas').hide();
-                $('#DetailedActivity').hide();
-                $('#SegmentEffortsFriends').show();    // show the friends segment efforts table
+                getSummarySegmentEfforts(event.data.id, event.data.name, true);
             }
 
             function showFriendsResults(event) {
@@ -326,7 +322,7 @@
                 console.log("athleteId is " + athleteId);
 
                 console.log("button pressed: id = " + event.data.id.toString());
-                console.log(event.data.name);
+                console.log(event.data);
 
                 // get friends for the authenticated athlete
                 $.ajax({
@@ -353,13 +349,7 @@
 
                     segmentEffortsByAthlete = [];
 
-                    getSummarySegmentEfforts(event.data.id, event.data.name);
-
-                    $('#RideSummary').hide();               // hide the summary, map, and segment efforts table
-                    $('#map-canvas').hide();
-                    $('#DetailedActivity').hide();         
-                    $('#SegmentEffortsFriends').show();    // show the friends segment efforts table
-
+                    getSummarySegmentEfforts(event.data.id, event.data.name, false);
                 });
             }
 
@@ -708,23 +698,9 @@
 
         <div id="SegmentEffortsFriends">
             <p id="effortName"></p>
-            <table style="width:680px" id="SegmentEffortsFriendsTable">
-                <col style="width:400px">
-                <col style="width:130px">
-                <col style="width:150px">
-
+            <table id="SegmentEffortsFriendsTable">
                 <tr>
                     <th class="segmentEffortsRiderName">Name</th>
-                    <th>Time</th>        
-                    <th>Date</th>        
-                </tr>
-            </table>
-        </div>
-
-        <div id="SegmentEffortsMe">
-            <p id="effortNameMe"></p>
-            <table id="SegmentEffortsMeTable">
-                <tr>
                     <th>Time</th>        
                     <th>Date</th>        
                 </tr>

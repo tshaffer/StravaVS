@@ -33,6 +33,13 @@
             padding:5px;
         }
 
+        /*table.hoverTable tr:hover td {
+            background-color: #FEFEFE;
+        }
+        #DetailedActivity tr:hover {
+          background-color: lightyellow;
+        }*/
+
         #DetailedActivity {
             display: none;
         }
@@ -48,13 +55,6 @@
             border-collapse:collapse;
         }
 
-        /*table.hoverTable tr:hover td {
-            background-color: #FEFEFE;
-        }
-        #DetailedActivity tr:hover {
-          background-color: lightyellow;
-        }*/
-
         #DetailedActivityTable tr {
             border-bottom: 1px solid lightgray;
             /*border-collapse:collapse;*/
@@ -65,10 +65,6 @@
             background-color: #fcfcfc;
             border: 0px solid black;
             border-collapse:collapse;
-        }
-
-       #SegmentEffortsFriends {
-            display: none;
         }
 
         #RideSummary {
@@ -113,6 +109,79 @@
             padding-right:10px;
             padding-bottom:0px;
             padding-left:10px;
+        }
+
+        #SegmentSummary {
+            /*position: absolute;
+            top: 0px;
+            width: 1800px;
+            height: 55px;*/
+            background-color: #f2f2f2;
+        }
+
+        #SegmentSummaryTable {
+            border: 0px solid black;
+            border-collapse:collapse;
+            width:800px;
+        }
+
+        #SegmentSummaryTable td {
+            border: 0px solid black;
+            border-collapse:collapse;
+        }
+
+        #SegmentSummaryDataRow {
+            font-weight: bold;
+            font-size:150%;
+        }
+
+        #SegmentSummaryDataRow td {
+            padding-top:4px;
+            padding-right:10px;
+            padding-bottom:4px;
+            padding-left:10px;
+        }
+
+        #SegmentSummaryLabels {
+            font-size:80%;
+            color: #a0a0a0;
+        }
+
+        #SegmentSummaryLabels td {
+            padding-top:4px;
+            padding-right:10px;
+            padding-bottom:0px;
+            padding-left:10px;
+        }
+
+       #SegmentEffortsSection {
+            display: none;
+            /*position: absolute;
+            top: 500px;
+            width: 1800px;*/
+        }
+
+        #SegmentEffortsSection th {
+            background-color: #c8c8c8;
+            border: 0px solid black;
+            border-collapse:collapse;
+        }
+
+        #SegmentEffortsTable {
+            border: 0px solid black;
+            border-collapse:collapse;
+        }
+
+        #SegmentEffortsTable tr {
+            border-bottom: 1px solid lightgray;
+            /*border-collapse:collapse;*/
+        }
+
+        #SegmentEffortsTable td {
+            text-align: center;
+            background-color: #fcfcfc;
+            border: 0px solid black;
+            border-collapse:collapse;
         }
 
         .hidden {
@@ -228,24 +297,34 @@
 
                 movingTime = getMovingTime(segmentEffort.moving_time);
 
+                // speed
+                var speed = (segmentEffort.distance * 0.000621371) / (segmentEffort.moving_time / 3600);
+                segmentEffort.speed = speed;
+
                 // ride date
                 d = new Date(segmentEffort.start_date_local);
                 date = d.toDateString();
 
-                rowToAdd = "<tr><td class='segmentEffortsRiderName'>" + friendName + '</td><td>' + movingTime + '</td><td>' + date + '</td></tr>';
-                $('#SegmentEffortsFriendsTable').append(rowToAdd);
+                rowToAdd = "<tr><td class='segmentEffortsRiderName'>" + friendName + '</td><td>' + movingTime + '</td><td>' + speed.toFixed(1) + ' mph</td><td>' + date + '</td></tr>';
+                $('#SegmentEffortsTable').append(rowToAdd);
             }
 
             function displaySummarySegmentEfforts(segmentName, hideName) {
                 console.log('displaySummarySegmentEfforts invoked, segmentName=' + segmentName);
 
-                $('#effortName').html("Segment is " + segmentName);
-
                 // loop through each athlete, outputting each segment effort for the given athlete
-                $.each(segmentEffortsByAthlete, function (index, friendEfforts) {
+                $.each(segmentEffortsByAthlete, function (athleteIndex, friendEfforts) {
                     friendName = friendEfforts.athleteName;
-                    $.each(friendEfforts.segmentEffort, function (index, friendEffort) {
+                    $.each(friendEfforts.segmentEffort, function (effortIndex, friendEffort) {
+
+                        if (athleteIndex == 0) {
+                            if (effortIndex == 0) {
+                                buildSegmentSummary(friendEffort);
+                            }
+                        }
+
                         displayFriendSegmentEffort(friendEffort, friendName);
+
                     });
                     if (hideName) {
                         $('.segmentEffortsRiderName').addClass('hidden');
@@ -255,7 +334,8 @@
                     $('#RideSummary').hide();               // hide the summary, map, and segment efforts table
                     $('#map-canvas').hide();
                     $('#DetailedActivity').hide();
-                    $('#SegmentEffortsFriends').show();    // show the friends segment efforts table
+                    $('#SegmentSummary').show();
+                    $('#SegmentEffortsSection').show();    // show the friends segment efforts table
 
                 });
             }
@@ -382,12 +462,36 @@
 
                 // add button handler to show friends' result for this segment
                 btnId = "#" + segmentId.toString();
-                $(btnId).click({ id: segmentId.toString(), name: segmentEffortName }, showFriendsResults);
+                $(btnId).click({ id: segmentId.toString(), name: segmentEffortName, segment: detailedEffort }, showFriendsResults);
 
                 // add button handler to show my results for this segment
                 btnId = "#" + segmentId.toString() + "MyEfforts";
-                $(btnId).click({ id: segmentId.toString(), name: segmentEffortName }, showMyEfforts);
+                $(btnId).click({ id: segmentId.toString(), name: segmentEffortName, segment: detailedEffort }, showMyEfforts);
 
+            }
+
+            function buildSegmentSummary(friendEffort) {
+
+                console.log("buildSegmentSummary invoked");
+
+                var segment = friendEffort.segment;
+
+                // segment name
+                var segmentName = segment.name;
+
+                // segment distance
+                var segmentDistance = segment.distance;
+
+                // segment average grade
+                var segmentAverageGrade = segment.average_grade;
+
+                // segment total elevation gain
+                var segmentElevationGain = "?";
+
+                $("#segmentName").html(segmentName);
+                $("#segmentDistance").text(segmentDistance.toFixed(1) + " mi");
+                $("#segmentAverageGrade").text(segmentAverageGrade + "%");
+                $("#segmentTotalElevation").text(segmentElevationGain + "%");
             }
 
             function buildRideSummary() {
@@ -540,7 +644,7 @@
             }
 
             function showActivitiesTable() {
-                $('#SegmentEffortsFriends').hide();
+                $('#SegmentEffortsSection').hide();
                 $('#DetailedActivity').hide();
                 $('#RideSummary').hide();
                 $('#SummaryActivities').show();
@@ -696,12 +800,32 @@
             </table>
         </div>
 
-        <div id="SegmentEffortsFriends">
-            <p id="effortName"></p>
-            <table id="SegmentEffortsFriendsTable">
+        <div id="SegmentSummary">
+          <table id="SegmentSummaryTable">
+
+            <tr id="SegmentSummaryDataRow">
+                <td id="segmentName"></td>
+                <td id="segmentDistance"></td>        
+                <td id="segmentAverageGrade"></td>
+                <td id="segmentTotalElevation"></td>
+            </tr>
+
+            <tr id="SegmentSummaryLabels">
+                <td></td>        
+                <td>Distance</td>
+                <td>Average Grade</td>
+                <td>Elevation</td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div id="SegmentEffortsSection">
+            <table id="SegmentEffortsTable">
                 <tr>
                     <th class="segmentEffortsRiderName">Name</th>
                     <th>Time</th>        
+                    <th>Speed</th>        
                     <th>Date</th>        
                 </tr>
             </table>

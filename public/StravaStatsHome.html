@@ -309,8 +309,11 @@
                 $('#SegmentEffortsTable').append(rowToAdd);
             }
 
-            function displaySummarySegmentEfforts(segmentName, hideName) {
+            function displaySummarySegmentEfforts(segment, segmentName, hideName) {
+
                 console.log('displaySummarySegmentEfforts invoked, segmentName=' + segmentName);
+
+                buildSegmentSummary(segment);
 
                 // loop through each athlete, outputting each segment effort for the given athlete
                 $.each(segmentEffortsByAthlete, function (athleteIndex, friendEfforts) {
@@ -319,7 +322,6 @@
 
                         if (athleteIndex == 0) {
                             if (effortIndex == 0) {
-                                buildSegmentSummary(friendEffort);
                             }
                         }
 
@@ -340,12 +342,13 @@
                 });
             }
 
-            function getSummarySegmentEfforts(segmentId, segmentName, hideName) {
-                console.log('getSummarySegmentEfforts invoked:' + segmentId + ' ' + segmentName);
+            function getSummarySegmentEfforts(segment, hideName) {
+
+                console.log('getSummarySegmentEfforts invoked:' + segment.segmentId + ' ' + segment.segmentName);
 
                 // get the id of the next athlete
                 if (Object.keys(athletes).length == 0) {
-                    displaySummarySegmentEfforts(segmentName, hideName);
+                    displaySummarySegmentEfforts(segment, segment.segmentName, hideName);
                     return;
                 }
 
@@ -362,7 +365,7 @@
                 // get summary activities for the specified athlete
                 $.ajax({
                     url: 'http://localHost:8080/allEfforts',
-                    data: { "segment_id": segmentId.toString(), "athlete_id": athleteId, "friend_id": friendId.toString() },
+                    data: { "segment_id": segment.segmentId.toString(), "athlete_id": athleteId, "friend_id": friendId.toString() },
 
                     type: 'GET',
                     dataType: 'json',
@@ -379,7 +382,7 @@
                     summarySegmentEffort.segmentEffort = data;
                     segmentEffortsByAthlete.push(summarySegmentEffort);
 
-                    getSummarySegmentEfforts(segmentId, segmentName, hideName);
+                    getSummarySegmentEfforts(segment, hideName);
                 });
             }
 
@@ -394,15 +397,10 @@
 
                 segmentEffortsByAthlete = [];
 
-                getSummarySegmentEfforts(event.data.id, event.data.name, true);
+                getSummarySegmentEfforts(event.data.segment, true);
             }
 
             function showFriendsResults(event) {
-
-                console.log("athleteId is " + athleteId);
-
-                console.log("button pressed: id = " + event.data.id.toString());
-                console.log(event.data);
 
                 // get friends for the authenticated athlete
                 $.ajax({
@@ -429,7 +427,7 @@
 
                     segmentEffortsByAthlete = [];
 
-                    getSummarySegmentEfforts(event.data.id, event.data.name, false);
+                    getSummarySegmentEfforts(event.data.segment, false);
                 });
             }
 
@@ -462,7 +460,7 @@
 
                 // add button handler to show friends' result for this segment
                 btnId = "#" + segmentId.toString();
-                $(btnId).click({ id: segmentId.toString(), name: segmentEffortName, segment: detailedEffort }, showFriendsResults);
+                $(btnId).click({ segment: detailedEffort }, showFriendsResults);
 
                 // add button handler to show my results for this segment
                 btnId = "#" + segmentId.toString() + "MyEfforts";
@@ -470,28 +468,26 @@
 
             }
 
-            function buildSegmentSummary(friendEffort) {
+            function buildSegmentSummary(segment) {
 
                 console.log("buildSegmentSummary invoked");
 
-                var segment = friendEffort.segment;
-
                 // segment name
-                var segmentName = segment.name;
+                var segmentName = segment.segmentEffortName;
 
                 // segment distance
-                var segmentDistance = segment.distance;
+                var segmentDistance = segment.segmentDistance;
 
                 // segment average grade
-                var segmentAverageGrade = segment.average_grade;
+                var segmentAverageGrade = segment.averageGrade;
 
                 // segment total elevation gain
-                var segmentElevationGain = "?";
+                var segmentElevationGain = segment.totalElevationGain;
 
                 $("#segmentName").html(segmentName);
                 $("#segmentDistance").text(segmentDistance.toFixed(1) + " mi");
                 $("#segmentAverageGrade").text(segmentAverageGrade + "%");
-                $("#segmentTotalElevation").text(segmentElevationGain + "%");
+                $("#segmentTotalElevation").text(segmentElevationGain.toFixed(1) + " ft");
             }
 
             function buildRideSummary() {

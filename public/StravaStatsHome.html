@@ -76,35 +76,35 @@
             background-color: #f2f2f2;
         }
 
-        #rideSummaryTable {
+        .summaryTable {
             border: 0px solid black;
             border-collapse:collapse;
             width:800px;
         }
 
-        #rideSummaryTable td {
+        .summaryTable td {
             border: 0px solid black;
             border-collapse:collapse;
         }
 
-        #RideSummaryDataRow {
+        .summaryDataRow {
             font-weight: bold;
             font-size:150%;
         }
 
-        #RideSummaryDataRow td {
+        .summaryDataRow td {
             padding-top:4px;
             padding-right:10px;
             padding-bottom:4px;
             padding-left:10px;
         }
 
-        #RowSummaryLabels {
+        .summaryLabels {
             font-size:80%;
             color: #a0a0a0;
         }
 
-        #RowSummaryLabels td {
+        .summaryLabels td {
             padding-top:4px;
             padding-right:10px;
             padding-bottom:0px;
@@ -117,41 +117,6 @@
             width: 1800px;
             height: 55px;*/
             background-color: #f2f2f2;
-        }
-
-        #SegmentSummaryTable {
-            border: 0px solid black;
-            border-collapse:collapse;
-            width:800px;
-        }
-
-        #SegmentSummaryTable td {
-            border: 0px solid black;
-            border-collapse:collapse;
-        }
-
-        #SegmentSummaryDataRow {
-            font-weight: bold;
-            font-size:150%;
-        }
-
-        #SegmentSummaryDataRow td {
-            padding-top:4px;
-            padding-right:10px;
-            padding-bottom:4px;
-            padding-left:10px;
-        }
-
-        #SegmentSummaryLabels {
-            font-size:80%;
-            color: #a0a0a0;
-        }
-
-        #SegmentSummaryLabels td {
-            padding-top:4px;
-            padding-right:10px;
-            padding-bottom:0px;
-            padding-left:10px;
         }
 
        #SegmentEffortsSection {
@@ -734,9 +699,9 @@
     <div class="background" style="position: relative; width:1900px;">
 
         <div id="RideSummary">
-          <table id="rideSummaryTable">
+          <table class="summaryTable">
 
-            <tr id="RideSummaryDataRow">
+            <tr class="summaryDataRow">
                 <td id="rideName"></td>
                 <td id="rideTime"></td>        
                 <td id="rideElevation"></td>
@@ -745,7 +710,7 @@
                 <td id="rideCalories"></td>
             </tr>
 
-            <tr id="RowSummaryLabels">
+            <tr class="summaryLabels">
                 <td id="rideDateTime"></td>
                 <td>Time</td>        
                 <td>Elevation</td>
@@ -797,16 +762,16 @@
         </div>
 
         <div id="SegmentSummary">
-          <table id="SegmentSummaryTable">
+          <table class="summaryTable">
 
-            <tr id="SegmentSummaryDataRow">
+            <tr class="summaryDataRow">
                 <td id="segmentName"></td>
                 <td id="segmentDistance"></td>        
                 <td id="segmentAverageGrade"></td>
                 <td id="segmentTotalElevation"></td>
             </tr>
 
-            <tr id="SegmentSummaryLabels">
+            <tr class="summaryLabels">
                 <td></td>        
                 <td>Distance</td>
                 <td>Average Grade</td>

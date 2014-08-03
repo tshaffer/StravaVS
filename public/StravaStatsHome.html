@@ -144,7 +144,12 @@
             var segmentEffortsByAthlete = [];
 
             var activitiesTableColumnOrders = {};
+            var effortsTableColumnOrders = {};
             var currentSortColumn;
+
+            var segmentEffortsData = [];
+
+            var effortsNameHidden;
 
             // google maps code
             function decodeLevels(encodedLevelsString) {
@@ -225,11 +230,7 @@
                 return movingTime;
             }
 
-            function displayFriendSegmentEffort(segmentEffort, friendName) {
-
-                console.log("displayFriendSegmentEffort invoked");
-                console.log("friend name is ");
-                console.log(friendName);
+            function displayFriendSegmentEffort(segmentEffort) {
 
                 movingTime = getMovingTime(segmentEffort.moving_time);
 
@@ -241,41 +242,52 @@
                 d = new Date(segmentEffort.start_date_local);
                 date = d.toDateString();
 
-                rowToAdd = "<tr><td class='segmentEffortsRiderName'>" + friendName + '</td><td>' + movingTime + '</td><td>' + speed.toFixed(1) + ' mph</td><td>' + date + '</td></tr>';
+                rowToAdd = "<tr><td class='segmentEffortsRiderName'>" + segmentEffort.friendName + '</td><td>' + movingTime + '</td><td>' + speed.toFixed(1) + ' mph</td><td>' + date + '</td></tr>';
                 $('#SegmentEffortsTable').append(rowToAdd);
             }
 
             function displaySummarySegmentEfforts(segment, segmentName, hideName) {
 
+                effortsNameHidden = hideName;
+
                 console.log('displaySummarySegmentEfforts invoked, segmentName=' + segmentName);
 
                 buildSegmentSummary(segment);
 
-                // loop through each athlete, outputting each segment effort for the given athlete
+                // loop through each athlete, outputting each segment effort for the given athlete (building data structure)
+                segmentEffortsData = [];
                 $.each(segmentEffortsByAthlete, function (athleteIndex, friendEfforts) {
                     friendName = friendEfforts.athleteName;
                     $.each(friendEfforts.segmentEffort, function (effortIndex, friendEffort) {
-
-                        if (athleteIndex == 0) {
-                            if (effortIndex == 0) {
-                            }
-                        }
-
-                        displayFriendSegmentEffort(friendEffort, friendName);
-
+                        friendEffort.friendName = friendName;
+                        segmentEffortsData.push(friendEffort);
                     });
-                    if (hideName) {
-                        $('.segmentEffortsRiderName').addClass('hidden');
-                        //$('td:nth-child(1)').hide(); - would also need to do this for th
-                    }
-
-                    $('#RideSummary').hide();               // hide the summary, map, and segment efforts table
-                    $('#map-canvas').hide();
-                    $('#DetailedActivity').hide();
-                    $('#SegmentSummary').show();
-                    $('#SegmentEffortsSection').show();    // show the friends segment efforts table
-
                 });
+
+                // display data built just above (build data for possible sorting later)
+                $.each(segmentEffortsData, function (index, segmentEffortData) {
+                    displayFriendSegmentEffort(segmentEffortData);
+                });
+
+                // loop through each athlete, outputting each segment effort for the given athlete
+                //$.each(segmentEffortsByAthlete, function (athleteIndex, friendEfforts) {
+                //    friendName = friendEfforts.athleteName;
+                //    $.each(friendEfforts.segmentEffort, function (effortIndex, friendEffort) {
+                //        displayFriendSegmentEffort(friendEffort, friendName);
+                //    });
+                //});
+
+                if (hideName) {
+                    $('.segmentEffortsRiderName').addClass('hidden');
+                    //$('td:nth-child(1)').hide(); - would also need to do this for th
+                }
+
+                $('#RideSummary').hide();               // hide the summary, map, and segment efforts table
+                $('#map-canvas').hide();
+                $('#DetailedActivity').hide();
+                $('#SegmentSummary').show();
+                $('#SegmentEffortsSection').show();    // show the friends segment efforts table
+
             }
 
             function getSummarySegmentEfforts(segment, hideName) {
@@ -623,6 +635,40 @@
                 activitiesTableColumnOrders[currentSortColumn] = sortOrder;
             }
 
+            function sortEffortsByColumn(self) {
+
+                //currentSortColumn = self[0].className;
+                currentSortColumn = self[0].classList[0];
+
+                var sortOrder = "ascending";
+                var sortFunction = sortAscending;
+
+                if (effortsTableColumnOrders[currentSortColumn] == "ascending") {
+                    sortOrder = "descending";
+                    sortFunction = sortDescending;
+                }
+
+                segmentEffortsData.sort(sortFunction);
+
+                // supposedly gets table from td
+                //var a = $('td').closest('table');
+
+                $(document).ready(function () {
+                    $("#SegmentEffortsTable").find("tr:gt(0)").remove();
+                })
+                //buildActivitiesTable(currentActivities);
+                $.each(segmentEffortsData, function (index, segmentEffortData) {
+                    displayFriendSegmentEffort(segmentEffortData);
+                });
+
+                if (effortsNameHidden) {
+                    $('.segmentEffortsRiderName').addClass('hidden');
+                    //$('td:nth-child(1)').hide(); - would also need to do this for th
+                }
+
+                effortsTableColumnOrders[currentSortColumn] = sortOrder;
+            }
+
             // get athleteId
             athleteId = $('body').data('athleteid');
             console.log("athleteId is ");
@@ -659,6 +705,12 @@
                 console.log(this);
                 sortByColumn($(this));
             });
+
+            $("#SegmentEffortsSection th").click(function () {
+                console.log(this);
+                sortEffortsByColumn($(this));
+            });
+
         });
     </script>
 
@@ -746,10 +798,10 @@
         <div id="SegmentEffortsSection" class="detailsActivity">
             <table id="SegmentEffortsTable" class="detailsActivityTable">
                 <tr>
-                    <th class="segmentEffortsRiderName">Name</th>
-                    <th>Time</th>        
-                    <th>Speed</th>        
-                    <th>Date</th>        
+                    <th class="friendName segmentEffortsRiderName">Name</th>
+                    <th class="moving_time">Time</th>        
+                    <th class="speed">Speed</th>        
+                    <th class="start_date_local">Date</th>        
                 </tr>
             </table>
         </div>

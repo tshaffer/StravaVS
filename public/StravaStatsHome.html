@@ -14,6 +14,7 @@
             top: 77px;
             width: 1800px;
             height: 400px;
+            display: none;
         }
 
         #DetailedActivity {
@@ -131,7 +132,9 @@
 
     <script>
         $(document).ready(function () {
-          
+
+// GLOBAL VARIABLES
+
             var athleteId;
             var athleteName;
 
@@ -151,7 +154,252 @@
 
             var effortsNameHidden;
 
-            // google maps code
+            var activitiesToCompare = [];
+
+// RANDOM
+
+            function getActivityName(activityId) {
+                var activityName = "";
+                $.each(currentActivities, function (index, currentActivity) {
+                    if (activityId == currentActivity.activityId) {
+                        activityName = currentActivity.name;
+                        return false;
+                    }
+                });
+                return activityName;
+            }
+
+// ACTIVITIES
+
+            function buildActivityRow(activity) {
+
+                console.log("buildActivityRow invoked, activity is ");
+                console.log(activity);
+
+                // activityName
+                var activityName = activity.name;
+
+                // athleteId
+                var athleteId = activity.athleteId;
+
+                // id
+                var activityId = activity.activityId;
+
+                // ride date
+                //d = new Date(activity.start_date_local);
+                var d = new Date(activity.startDateTime);
+                var date = d.toLocaleString();
+
+                // distance
+                var miles = activity.distance;
+
+                // riding time
+                var movingTime = getMovingTime(activity.movingTime);
+
+                // elevation gain
+                var elevationGain = activity.totalElevationGain;
+
+                // average speed (meters per second)
+                var mph = activity.averageSpeed;
+
+                var calories = activity.calories;
+
+                //rowToAdd = '<tr><td>' + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + calories + '</td><td>' + "<input id='" + activityId + "' type='submit' value='Show details'/>" + '</td></tr>';
+                var rowToAdd = "<tr id='tr" + activityId + "'><td><input type='checkbox'/></td><td>" + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + calories + '</td><td>' + "<input id='" + activityId + "' type='submit' value='Show details'/>" + '</td></tr>';
+                $('#activitiesTable').append(rowToAdd);
+
+                // add button handler for this particular activity
+                var btnId = "#" + activityId;
+                $(btnId).click({ activityId: activityId, athleteId: athleteId, activityName: activityName, activity: activity }, showDetails);
+            }
+
+            function buildActivitiesTable(activities) {
+
+                $.each(activities, function (index, activityElement) {
+                    buildActivityRow(activityElement);
+                });
+            }
+
+            function sortActivitiesByDate(activities) {
+                $.each(activities, function (index, activity) {
+                    activity.dateTime = new Date(activity.startDateTime);
+                });
+
+                activities.sort(function (a, b) {
+                    if (a.dateTime < b.dateTime)
+                        return 1;
+                    if (a.dateTime > b.dateTime)
+                        return -1
+                    return 0;
+                });
+            }
+
+            function showActivitiesTable() {
+                $('#SegmentEffortsSection').hide();
+                $('#DetailedActivity').hide();
+                $('#RideSummary').hide();
+                $('#SummaryActivities').show();
+            }
+
+            // retrieves the activities, one at a time
+            function retrieveActivity(activityIds, activityId) {
+
+                console.log("retrieveActivity invoked, activityId: " + activityId);
+
+                var activityName = getActivityName(activityId);
+
+                $.ajax({
+                    url: 'http://localHost:8080/activityEfforts',
+                    data: { "activityId": activityId, "athleteId": athleteId, "activityName": activityName },
+
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    console.log("retrieveActivity success");
+                    //console.log(textStatus);
+                    console.log(data);
+
+                    // do something with this activity (push it?)
+                    activitiesToCompare.push(data);
+
+                    if (activityIds.length == 0) {
+                        buildComparisonData();
+                        return;
+                    }
+
+                    activityId = activityIds.shift();
+                    retrieveActivity(activityIds, activityId);
+                });
+            }
+
+            function buildComparisonData() {
+
+                masterActivity = activitiesToCompare[0];
+
+                // the labels for each row are the names of each of the segments in the master activity
+                var rowLabels = [];
+                var masterSegmentIds = [];
+                $.each(masterActivity.detailedEfforts, function (index, detailedEffort) {
+                    rowLabels.push(detailedEffort.segmentName);
+                    masterSegmentIds.push(detailedEffort.segmentId);
+                });
+
+                var columns = [];
+
+                // for each activity
+                //      create column
+                //      for each segment
+                //          is this segment in the master segment list?
+                //              if yes, get the segment moving time; if not, leave blank
+                //          push onto column
+
+                $.each(activitiesToCompare, function (activityIndex, activity) {
+                    var column = [];
+                    $.each(masterSegmentIds, function (masterSegmentIdIndex, masterSegmentId) {
+                        var movingTime = "";
+                        $.each(activity.detailedEfforts, function (segmentIndex, detailedEffort) {
+                            thisSegmentId = detailedEffort.segmentId;
+                            if (thisSegmentId == masterSegmentId) {
+                                movingTime = detailedEffort.movingTime;
+                                return false;
+                            }
+                        });
+                        column.push(movingTime);
+                    });
+                    columns.push(column);
+                });
+
+                console.log(columns);
+
+                // build table from rowLabels, columns
+                // table name is: comparedActivitiesTable
+
+                // output rowHeaders
+                //var rowToAdd = "<tr id='tr" + activityId + "'><td><input type='checkbox'/></td><td>" + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + calories + '</td><td>' + "<input id='" + activityId + "' type='submit' value='Show details'/>" + '</td></tr>';
+                //$('#activitiesTable').append(rowToAdd);
+
+                var rowToAdd = "<tr><th></th>";
+                $.each(activitiesToCompare, function (activityIndex, activity) {
+                    // bogus selection of date
+                    rowToAdd += "<th>" + activity.detailedEfforts[0].startDateTime + "</th>";
+                });
+                rowToAdd += "</tr>";
+                $('#comparedActivitiesTable').append(rowToAdd);
+
+                // for each segment in masterSegments
+                // output rowLabel
+                // for each item in column, output entry
+                $.each(masterSegmentIds, function (masterSegmentIdIndex, masterSegmentId) {
+                    var rowToAdd = "<tr><td>" + rowLabels[masterSegmentIdIndex] + "</td>";
+                    $.each(columns, function (columnIndex, column) {
+                        rowToAdd += "<td>" + column[masterSegmentIdIndex] + "</td>";
+                    });
+                    rowToAdd += "</tr>";
+                    $('#comparedActivitiesTable').append(rowToAdd);
+                });
+
+                $('#SummaryActivities').hide();
+                $('#ComparedActivities').show();    // show the friends segment efforts table
+
+            }
+
+            function compareActivities(activityIds) {
+                console.log("compareActivities invoked, activityIds:");
+                console.log(activityIds);
+
+                // retrieve all of the selected activities first
+                var activityId = activityIds.shift();
+                retrieveActivity(activityIds, activityId);
+                return;
+
+
+
+                var masterActivityId = activityIds[0];
+                var masterActivityName = getActivityName(masterActivityId);
+
+                // retrieve master activity
+                $.ajax({
+                    url: 'http://localHost:8080/activityEfforts',
+                    data: { "activityId": masterActivityId, "athleteId": athleteId, "activityName": masterActivityName },
+
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    console.log("success");
+                    console.log(textStatus);
+                    console.log(data);
+
+                    var masterActivity = data;
+
+                    // the labels for each row are the names of each of the segments in the master activity
+                    var rowLabels = [];
+                    var masterSegmentIds = [];
+                    $.each(masterActivity.detailedEfforts, function (index, detailedEffort) {
+                        rowLabels.push(detailedEffort.segmentName);
+                        masterSegmentIds.push(detailedEffort.segmentId);
+                    });
+
+                    console.log("rowLabels: ");
+                    console.log(rowLabels);
+
+                    console.log("masterSegmentIds:");
+                    console.log(masterSegmentIds);
+
+                });
+
+                // currentActivities - contains is the array of activities for the authenticated athlete. each one is an object that includes an activityId member.
+                // there is nothing in the object that references the list of associated segment efforts
+                // however, there should be an object somewhere the associates activityId's with segments, efforts. This would get accessed when the user presses Details.
+                // something to keep in mind - there may be data required that is not yet loaded - code that loads it would be associated with the Show Details button handler.
+
+            }
+
+// GOOGLE MAPS
+
             function decodeLevels(encodedLevelsString) {
                 var decodedLevels = [];
 
@@ -161,7 +409,6 @@
                 }
                 return decodedLevels;
             }
-
 
             function initializeMap(activity) {
                 console.log("initializeMap: activity is");
@@ -174,7 +421,7 @@
                     zoom: 14,
                     center: myLatlng,
                     mapTypeId: google.maps.MapTypeId.TERRAIN
-            }
+                }
                 var map = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
 
                 var pathToDecode = activity.mapPolyline;
@@ -199,6 +446,8 @@
                 });
 
             }
+
+// UTILITY FUNCTIONS
 
             function getDistance(distanceInMeters) {
                 distanceInMiles = distanceInMeters * 0.000621371;
@@ -229,6 +478,8 @@
                 movingTime += minutesStr + ':' + secondsStr;
                 return movingTime;
             }
+
+
 
             function displayFriendSegmentEffort(segmentEffort) {
 
@@ -525,75 +776,6 @@
                 getActivityEfforts(event.data.activityId, event.data.athleteId, event.data.activityName);
             }
 
-            function buildActivityRow(activity) {
-
-                console.log("buildActivityRow invoked, activity is ");
-                console.log(activity);
-
-                // activityName
-                activityName = activity.name;
-
-                // athleteId
-                athleteId = activity.athleteId;
-
-                // id
-                activityId = activity.activityId;
-
-                // ride date
-                //d = new Date(activity.start_date_local);
-                d = new Date(activity.startDateTime);
-                date = d.toLocaleString();
-
-                // distance
-                miles = activity.distance;
-
-                // riding time
-                movingTime = getMovingTime(activity.movingTime);
-
-                // elevation gain
-                elevationGain = activity.totalElevationGain;
-
-                // average speed (meters per second)
-                mph = activity.averageSpeed;
-
-                calories = activity.calories;
-
-                rowToAdd = '<tr><td>' + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + calories + '</td><td>' + "<input id='" + activityId + "' type='submit' value='Show details'/>" + '</td></tr>';
-                $('#activitiesTable').append(rowToAdd);
-
-                // add button handler for this particular activity
-                btnId = "#" + activityId;
-                $(btnId).click({ activityId: activityId, athleteId: athleteId, activityName: activityName, activity: activity }, showDetails);
-            }
-
-            function buildActivitiesTable(activities) {
-
-                $.each(activities, function (index, activityElement) {
-                    buildActivityRow(activityElement);
-                });
-            }
-
-            function sortActivitiesByDate(activities) {
-                $.each(activities, function (index, activity) {
-                    activity.dateTime = new Date(activity.startDateTime);
-                });
-
-                activities.sort(function (a, b) {
-                    if (a.dateTime < b.dateTime)
-                        return 1;
-                    if (a.dateTime > b.dateTime)
-                        return -1
-                    return 0;
-                });
-            }
-
-            function showActivitiesTable() {
-                $('#SegmentEffortsSection').hide();
-                $('#DetailedActivity').hide();
-                $('#RideSummary').hide();
-                $('#SummaryActivities').show();
-            }
-
             function sortAscending(a, b) {
                 if (a[currentSortColumn] < b[currentSortColumn])
                     return 1;
@@ -711,6 +893,29 @@
                 sortEffortsByColumn($(this));
             });
 
+            $("#btnCompareSelectedRides").click(function () {
+
+                var numRows = 0;
+                var selectedRows = 0;
+
+                var selectedActivityIds = [];
+
+                $('#activitiesTable tr').each(function (i, row) {
+
+                    var $row = $(row);
+                    var $checkedBoxes = $row.find('input:checked');
+
+                    if ($checkedBoxes.length == 1) {
+                        selectedRows++;
+
+                        var activityId = $row[0].id.substring(2);
+                        selectedActivityIds.push(activityId);
+                    }
+                    numRows++;
+                });
+
+                compareActivities(selectedActivityIds);
+            });
         });
     </script>
 
@@ -746,8 +951,10 @@
         </div>
 
         <div id="SummaryActivities">
+            <button type="button" id="btnCompareSelectedRides">Compare selected rides</button>
             <table id="activitiesTable">
                 <tr>
+                    <th></th>
                     <th class="startDateTime">Date</th>
                     <th class="name">Name</th>
                     <th class="movingTime">Riding Time</th>        
@@ -759,8 +966,11 @@
                 </tr>
 
             </table>
-     </div>
+        </div>
 
+        <div id="ComparedActivities" class="hidden">
+            <table id="comparedActivitiesTable"></table>
+        </div>
 
         <div id="DetailedActivity" class="detailsActivity">
             <table id="DetailedActivityTable" class="detailsActivityTable">

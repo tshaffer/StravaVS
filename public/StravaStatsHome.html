@@ -306,24 +306,19 @@
                                 return false;
                             }
                         });
-                        column.push(movingTime);
+                        column.push(getMovingTime(movingTime));
                     });
                     columns.push(column);
                 });
 
                 console.log(columns);
 
-                // build table from rowLabels, columns
-                // table name is: comparedActivitiesTable
-
-                // output rowHeaders
-                //var rowToAdd = "<tr id='tr" + activityId + "'><td><input type='checkbox'/></td><td>" + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + calories + '</td><td>' + "<input id='" + activityId + "' type='submit' value='Show details'/>" + '</td></tr>';
-                //$('#activitiesTable').append(rowToAdd);
-
                 var rowToAdd = "<tr><th></th>";
                 $.each(activitiesToCompare, function (activityIndex, activity) {
                     // bogus selection of date
-                    rowToAdd += "<th>" + activity.detailedEfforts[0].startDateTime + "</th>";
+                    var d = new Date(activity.detailedEfforts[0].startDateTime);
+                    var date = d.toDateString();
+                    rowToAdd += "<th>" + date + "</th>";
                 });
                 rowToAdd += "</tr>";
                 $('#comparedActivitiesTable').append(rowToAdd);
@@ -342,7 +337,6 @@
 
                 $('#SummaryActivities').hide();
                 $('#ComparedActivities').show();    // show the friends segment efforts table
-
             }
 
             function compareActivities(activityIds) {

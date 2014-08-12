@@ -41,6 +41,10 @@
           background-color: lightyellow;
         }*/
 
+        .fastestTime {
+            color: red;
+        }
+
         .detailsActivity {
             display: none;
         }
@@ -274,6 +278,26 @@
                 });
             }
 
+            function retrieveBestEfforts(segmentIds, rowLabels) {
+
+                $.ajax({
+                    url: 'http://localHost:8080/bestTimes',
+                    data: { "segmentIds": segmentIds },
+
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    console.log("retrieveBestTimes success");
+                    //console.log(textStatus);
+                    console.log(data);
+
+                    buildComparisonData2(segmentIds, rowLabels, data);
+                });
+
+            }
+
             function buildComparisonData() {
 
                 masterActivity = activitiesToCompare[0];
@@ -285,6 +309,14 @@
                     rowLabels.push(detailedEffort.segmentName);
                     masterSegmentIds.push(detailedEffort.segmentId);
                 });
+
+                retrieveBestEfforts(masterSegmentIds, rowLabels);
+            }
+
+            function buildComparisonData2(masterSegmentIds, rowLabels, bestTimes)
+            {
+                console.log("buildComparisonData2: bestTimes");
+                console.log(bestTimes);
 
                 var columns = [];
 
@@ -306,7 +338,6 @@
                                 return false;
                             }
                         });
-//                        column.push(getMovingTime(movingTime));
                         column.push(movingTime);
                     });
                     columns.push(column);
@@ -353,12 +384,20 @@
                         }
                         rowToAdd += "<td>" + timeAsStr + "</td>";
                     });
+
+                    // add best time (ever) for this effort
+                    bestTime = bestTimes[masterSegmentId];
+                    console.log("bestTime: " + bestTime);
+
                     rowToAdd += "</tr>";
                     $('#comparedActivitiesTable').append(rowToAdd);
 
                     // highlight the entry in the columns with the fastest times.
-                    var columnOfFastestTime = columnsOfFastestTime[0] + 2;
-                    $("#comparedActivitiesTable tr:last td:nth-child(" + columnOfFastestTime + ")").css("color", "red");
+                    $.each(columnsOfFastestTime, function (index, columnOfFastestTime) {
+                        var columnOfFastestTimeChildIndex = columnOfFastestTime + 2;
+                        //$("#comparedActivitiesTable tr:last td:nth-child(" + columnOfFastestTimeChildIndex + ")").css("color", "red");
+                        $("#comparedActivitiesTable tr:last td:nth-child(" + columnOfFastestTimeChildIndex + ")").addClass("fastestTime");
+                    });
                 });
 
                 $('#SummaryActivities').hide();

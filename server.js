@@ -72,6 +72,45 @@ function getFriends(responseData) {
 
 }
 
+function getBestTimes(responseData, segmentIds) {
+
+    var numRemainingQueries = segmentIds.length;
+
+    var bestTimes = [];
+
+    segmentIds.forEach(getBestTime);
+    function getBestTime(segmentId, index, array) {
+        console.log("segmentId: " + segmentId);
+
+        var query = "select min(segmenteffort.movingTime) as besttime from segmenteffortids, segmenteffort where segmenteffort.segmentEffortId = segmenteffortids.segmentEffortId and segmenteffortids.segmentId=?";
+        db.query(
+          query,
+          [segmentId],
+          function (err, rows) {
+              if (err) throw err;
+              //console.log("getBestEffort query returned");
+              //console.log("return from query - rows length = " + rows.length);
+              //console.log(rows[0]);
+              //var bestTime = rows[0]['min(segmenteffort.movingTime)'];
+              //console.log("bestTime: " + rows[0]["besttime"]);
+
+              var bestTime = rows[0]["besttime"];
+              console.log("bestTime for segmentId: " + segmentId + " is " + bestTime);
+
+              var bestTimeForSegment = {};
+              bestTimeForSegment.segmentId = segmentId;
+              bestTimeForSegment.bestTime = bestTime;
+              bestTimes.push(bestTimeForSegment);
+
+              numRemainingQueries--;
+              if (numRemainingQueries == 0) {
+                  console.log("all bestTimes retrieved");
+                  sendBestTimesResponse(responseData.serverResponse, bestTimes);
+              }
+          });
+    };
+}
+
 // get segment efforts for a friend or authenticated athlete
 function allEfforts(responseData) {
 
@@ -943,6 +982,14 @@ function serveStatic(response, cache, absPath) {
     }
 }
 
+function sendBestTimesResponse(response, bestTimesAsJson) {
+    response.writeHead(
+    200,
+    { "content-type": 'application/json' }
+    );
+    response.end(JSON.stringify(bestTimesAsJson, null, 3));
+}
+
 function sendActivitiesResponse(response, activitiesAsJson) {
     response.writeHead(
     200,
@@ -1165,6 +1212,31 @@ var server = http.createServer(function (request, response) {
         responseData.athleteId = parsedUrl.query.athleteId;
         console.log("responseData.athleteId is " + responseData.athleteId);
         getAuthenticatedAthlete(responseData, getFriends);
+        return;
+    }
+    else if (parsedUrl.pathname == '/bestTimes') {
+        console.log("bestTimes, segmentIds are: ");
+        console.log(parsedUrl.query["segmentIds[]"]);
+
+
+
+
+        //console.log("type of parsedUrl.query: " + typeof parsedUrl.query);
+
+        //for (var key in parsedUrl.query) {
+        //    // do something with key
+        //    console.log("type of key: " + typeof key);
+        //    console.log(key);
+        //    console.log("type of value: " + typeof parsedUrl.query[key]);
+        //    console.log("length of value: " + parsedUrl.query[key].length);
+        //    console.log(parsedUrl.query[key]);
+        //}
+
+        //console.log("segmentIds:");
+
+        //console.log("type of segmentIds is: " + typeof parsedUrl.query.segmentIds);
+        //console.log(parsedUrl.query.segmentIds);
+        getBestTimes(responseData, parsedUrl.query["segmentIds[]"]);
         return;
     }
     else if (request.url == '/') {                                      // default to index.html

@@ -313,10 +313,10 @@
                 retrieveBestEfforts(masterSegmentIds, rowLabels);
             }
 
-            function buildComparisonData2(masterSegmentIds, rowLabels, bestTimes)
+            function buildComparisonData2(masterSegmentIds, rowLabels, bestTimesBySegment)
             {
-                console.log("buildComparisonData2: bestTimes");
-                console.log(bestTimes);
+                console.log("buildComparisonData2: bestTimesBySegment");
+                console.log(bestTimesBySegment);
 
                 var columns = [];
 
@@ -354,7 +354,7 @@
                     var date = d.toDateString();
                     rowToAdd += "<th>" + date + "</th>";
                 });
-                rowToAdd += "</tr>";
+                rowToAdd += "<th>Best Time</th></tr>";
                 $('#comparedActivitiesTable').append(rowToAdd);
 
                 // for each item in column, output entry
@@ -386,8 +386,10 @@
                     });
 
                     // add best time (ever) for this effort
-                    bestTime = bestTimes[masterSegmentId];
+                    bestTime = bestTimesBySegment[masterSegmentId];
                     console.log("bestTime: " + bestTime);
+                    bestTimeAsStr = getMovingTime(bestTime);
+                    rowToAdd += "<td>" + bestTimeAsStr + "</td>";
 
                     rowToAdd += "</tr>";
                     $('#comparedActivitiesTable').append(rowToAdd);

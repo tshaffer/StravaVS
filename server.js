@@ -76,7 +76,7 @@ function getBestTimes(responseData, segmentIds) {
 
     var numRemainingQueries = segmentIds.length;
 
-    var bestTimes = [];
+    var bestTimesBySegment = {};
 
     segmentIds.forEach(getBestTime);
     function getBestTime(segmentId, index, array) {
@@ -97,15 +97,12 @@ function getBestTimes(responseData, segmentIds) {
               var bestTime = rows[0]["besttime"];
               console.log("bestTime for segmentId: " + segmentId + " is " + bestTime);
 
-              var bestTimeForSegment = {};
-              bestTimeForSegment.segmentId = segmentId;
-              bestTimeForSegment.bestTime = bestTime;
-              bestTimes.push(bestTimeForSegment);
+              bestTimesBySegment[segmentId] = bestTime;
 
               numRemainingQueries--;
               if (numRemainingQueries == 0) {
                   console.log("all bestTimes retrieved");
-                  sendBestTimesResponse(responseData.serverResponse, bestTimes);
+                  sendBestTimesResponse(responseData.serverResponse, bestTimesBySegment);
               }
           });
     };
@@ -982,12 +979,12 @@ function serveStatic(response, cache, absPath) {
     }
 }
 
-function sendBestTimesResponse(response, bestTimesAsJson) {
+function sendBestTimesResponse(response, bestTimesBySegment) {
     response.writeHead(
     200,
     { "content-type": 'application/json' }
     );
-    response.end(JSON.stringify(bestTimesAsJson, null, 3));
+    response.end(JSON.stringify(bestTimesBySegment, null, 3));
 }
 
 function sendActivitiesResponse(response, activitiesAsJson) {

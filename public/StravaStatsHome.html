@@ -496,10 +496,14 @@
                 var decodedPath = google.maps.geometry.encoding.decodePath(pathToDecode);
                 var decodedLevels = decodeLevels("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
 
+                var elevationLocation;
+
                 var bounds = new google.maps.LatLngBounds();
                 $.each(decodedPath, function (index, location) {
-                    var myLatLng = new google.maps.LatLng(location.k, location.B);
-                    bounds.extend(myLatLng);
+                    //var myLatLng = new google.maps.LatLng(location.k, location.B);
+                    //var myLatLng = new google.maps.LatLng(location.k, location.A);
+                    //bounds.extend(myLatLng);
+                    bounds.extend(location);
                 });
 
                 map.fitBounds(bounds);
@@ -513,7 +517,69 @@
                     map: map
                 });
 
+// ELEVATION PROTOTYPING
+
+    // ELEVATION ALONG THE RIDE'S PATH
+                var elevator = new google.maps.ElevationService();
+
+                // Create a PathElevationRequest object using this array.
+                // Ask for 256 samples along that path.
+                var pathRequest = {
+                    'path': decodedPath,
+                    //'samples': 256
+                    'samples': 10
+                };
+
+                    // Initiate the path request.
+                elevator.getElevationAlongPath(pathRequest, elevationCallback);
             }
+
+            function elevationCallback(results, status) {
+                if (status != google.maps.ElevationStatus.OK) {
+                    return;
+                }
+                var elevations = results;
+
+                //  results[0].elevation: elevation at a point (in meters)
+                //  results[0].resolution: distance between two points (in meters). the same for all points?
+                //  results[0].location: lat, lng object representing the point
+            }
+
+    // ELEVATION AT A SINGLE POINT
+                // Create an ElevationService
+            //    var infowindow = new google.maps.InfoWindow();
+            //    var elevator = new google.maps.ElevationService();
+
+            //    var locations = [];
+
+            //    elevationLocation = decodedPath[0];
+            //    locations.push(elevationLocation);
+
+            //    // Create a LocationElevationRequest object using the array's one value
+            //    var positionalRequest = {
+            //        'locations': locations
+            //    }
+
+            //    // Initiate the location request
+            //    elevator.getElevationForLocations(positionalRequest, function (results, status) {
+            //        if (status == google.maps.ElevationStatus.OK) {
+
+            //            // Retrieve the first result
+            //            if (results[0]) {
+
+            //                // Open an info window indicating the elevation at the clicked position
+            //                infowindow.setContent('The elevation at this point <br>is ' + results[0].elevation + ' meters.');
+            //                infowindow.setPosition(elevationLocation);
+            //                infowindow.open(map);
+            //            } else {
+            //                alert('No results found');
+            //            }
+            //        } else {
+            //            alert('Elevation service failed due to: ' + status);
+            //        }
+            //    });
+
+            //}
 
 // UTILITY FUNCTIONS
 
@@ -960,6 +1026,11 @@
                 console.log(this);
                 sortEffortsByColumn($(this));
             });
+
+            // random event handlers
+            window.onpopstate = function (event) {
+                alert("location: " + document.location + ", state: " + JSON.stringify(event.state));
+            };
 
             $("#btnCompareSelectedRides").click(function () {
 

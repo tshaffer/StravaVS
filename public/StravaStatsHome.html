@@ -364,9 +364,14 @@
                     var fastestTime = 99999;
                     var columnsOfFastestTime = [];
 
+                    // best time ever for this segment
+                    bestTime = bestTimesBySegment[masterSegmentId];
+                    console.log("bestTime: " + bestTime);
+
                     var rowToAdd = "<tr><td>" + rowLabels[masterSegmentIdIndex] + "</td>";
                     $.each(columns, function (columnIndex, column) {
                         var thisTime = column[masterSegmentIdIndex];
+                        var tdStr = "<td>";
                         if (typeof thisTime == "number") {
                             timeAsStr = getMovingTime(thisTime);
 
@@ -378,16 +383,18 @@
                                 fastestTime = thisTime;
                                 columnsOfFastestTime.push(columnIndex);
                             }
+                            if (thisTime <= bestTime) {
+                                tdStr = "<td class='fastestTimeEver'>";
+                                timeAsStr += "*";
+                            }
                         }
                         else {
                             timeAsStr = "";
                         }
-                        rowToAdd += "<td>" + timeAsStr + "</td>";
+                        rowToAdd += tdStr + timeAsStr + "</td>";
                     });
 
                     // add best time (ever) for this effort
-                    bestTime = bestTimesBySegment[masterSegmentId];
-                    console.log("bestTime: " + bestTime);
                     bestTimeAsStr = getMovingTime(bestTime);
                     rowToAdd += "<td>" + bestTimeAsStr + "</td>";
 

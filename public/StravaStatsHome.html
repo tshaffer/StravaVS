@@ -559,8 +559,9 @@
                 var pathRequest = {
                     'path': ridePathDecoded,
                     //'samples': 256
-                    'samples': 40
-                };
+                    //'samples': 40
+                    'samples': 10
+            };
 
                 // Initiate the path request.
                 elevator.getElevationAlongPath(pathRequest, elevationCallback);
@@ -613,7 +614,23 @@
 
                 var data = google.visualization.arrayToDataTable(rows);
                 var options = {
-                    title: 'Elevation Profile'
+                    //chartArea: { left: 20, top: 0, width: '50%', height: '75%' }
+                    chartArea: { left: 60, top: 30, width: '60%', height: '70%' },
+                    hAxis: {
+                        format: '## mi',
+                        textStyle: {
+                            fontSize: 10
+                        }
+                    },
+                    vAxis: {
+                        format: '## ft',
+                        textStyle: {
+                            fontSize: 10
+                        }
+                    },
+                    legend: {
+                        position: 'none'
+                    }
                 };
 
                 elevationChart = $('#elevationChart')[0];

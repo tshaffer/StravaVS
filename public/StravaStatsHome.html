@@ -590,7 +590,7 @@
                 dataTable.addColumn('number', 'Distance');
                 dataTable.addColumn('number', 'Elevation');
                 // A column for custom tooltip content
-                dataTable.addColumn({ type: 'string', role: 'tooltip' });
+                dataTable.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
 
                 //var rows = [];
 
@@ -617,7 +617,10 @@
                     row = [];
                     row.push(distanceInMiles);
                     row.push(elevationInFeet);
-                    row.push("Distance: " + distanceInMiles.toFixed(1) + " mi" + "\nElevation: " + elevationInFeet.toFixed(0) + " ft");
+                    //row.push("Distance: " + distanceInMiles.toFixed(1) + " mi" + "\nElevation: " + elevationInFeet.toFixed(0) + " ft");
+
+                    var ttHtml = '<div style="padding:5px 5px 5px 5px;">Distance:<b>' + distanceInMiles.toFixed(1) + 'mi</b><br>Elevation:<b>' + elevationInFeet.toFixed(0) + 'ft</b></div>';
+                    row.push(ttHtml);
 
                     //rows.push(row);
                     dataTable.addRow(row);
@@ -649,6 +652,9 @@
                     legend: {
                         position: 'none'
                     },
+                    tooltip: {
+                        isHtml: true
+                    }
                     //tooltip: {
                     //    trigger: 'selection'
                     //    //trigger: 'focus'

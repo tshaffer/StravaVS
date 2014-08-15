@@ -595,6 +595,8 @@
                 var distanceFromStart = 0;
                 var lastElevation;
 
+                var mapDistanceToLocation = {};
+
                 $.each(elevations, function (index, elevation) {
 
                     if (index > 0) {
@@ -608,11 +610,13 @@
                     
                     lastElevation = elevation;
 
+                    mapDistanceToLocation[metersToMiles(distanceFromStart).toString()] = elevation.location;
+
                     //distanceFromStart += elevation.resolution;
                     //console.log("distance between: " + google.maps.geometry.spherical.computeDistanceBetween(ridePathDecoded[0], ridePathDecoded[1]));
                 });
 
-                var data = google.visualization.arrayToDataTable(rows);
+                var dataTable = google.visualization.arrayToDataTable(rows);
                 var options = {
                     //chartArea: { left: 20, top: 0, width: '50%', height: '75%' }
                     chartArea: { left: 60, top: 30, width: '60%', height: '70%' },
@@ -630,12 +634,56 @@
                     },
                     legend: {
                         position: 'none'
-                    }
+                    },
+                    //tooltip: {
+                    //    trigger: 'selection'
+                    //    //trigger: 'focus'
+                    //}
                 };
 
                 elevationChart = $('#elevationChart')[0];
                 var chart = new google.visualization.LineChart(elevationChart);
-                chart.draw(data, options);
+                //var chart = new google.visualization.AreaChart(elevationChart);
+
+                //chart.setAction({
+                //    id: 'eat pizza',
+                //    text: 'Eat Pizza',
+                //    action: function () {
+                //        alert("Eat more pizza now!!");
+                //    }
+                //});
+
+                chart.draw(dataTable, options);
+
+                // Add our over/out handlers.
+                google.visualization.events.addListener(chart, 'onmouseover', chartMouseOver);
+                google.visualization.events.addListener(chart, 'onmouseout', chartMouseOut);
+
+                function chartMouseOver(e) {
+                    chart.setSelection([e]);
+
+                    var item = chart.getSelection();
+                    if (item != undefined) {
+                        var selectedItem = item[0];
+                        console.log("item selected:  row=" + selectedItem.row + ", column=" + selectedItem.column);
+                        console.log("distance is: " + dataTable.getValue(selectedItem.row, 0));
+                        console.log("elevation is: " + dataTable.getValue(selectedItem.row, selectedItem.column));
+
+                        var selectedLocation = mapDistanceToLocation[dataTable.getValue(selectedItem.row, 0)];
+                        if (selectedLocation != undefined) {
+                            console.log("selected location: ");
+                            console.log(selectedLocation);
+
+                            console.log("lat is: " + selectedLocation.lat() + ", lng is: " + selectedLocation.lng());
+
+                        }
+                    }
+
+                }
+
+                function chartMouseOut(e) {
+                    chart.setSelection([{ 'row': null, 'column': null }]);
+                }
             }
 
     // ELEVATION AT A SINGLE POINT

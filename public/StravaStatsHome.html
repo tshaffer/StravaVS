@@ -173,9 +173,11 @@
 
             var activitiesToCompare = [];
 
+            var activityMap;
+
             var ridePathDecoded;
             var elevations;
-
+            var mapMarker;
 // RANDOM
 
             function getActivityName(activityId) {
@@ -506,7 +508,7 @@
                     center: myLatlng,
                     mapTypeId: google.maps.MapTypeId.TERRAIN
                 }
-                var map = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
+                activityMap = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
 
                 var pathToDecode = activity.mapPolyline;
                 ridePathDecoded = google.maps.geometry.encoding.decodePath(pathToDecode);
@@ -520,7 +522,7 @@
                     bounds.extend(location);
                 });
 
-                map.fitBounds(bounds);
+                activityMap.fitBounds(bounds);
 
                 var setRegion = new google.maps.Polyline({
                     path: ridePathDecoded,
@@ -528,7 +530,7 @@
                     strokeColor: "#FF0000",
                     strokeOpacity: 1.0,
                     strokeWeight: 2,
-                    map: map
+                    map: activityMap
                 });
 
 // ELEVATION PROTOTYPING
@@ -675,6 +677,26 @@
                             console.log(selectedLocation);
 
                             console.log("lat is: " + selectedLocation.lat() + ", lng is: " + selectedLocation.lng());
+
+                            // erase old marker, if it existed
+                            if (mapMarker != null) {
+                                mapMarker.setMap(null);
+                            }
+
+                            var markerOptions = {
+                                strokeColor: '#FFFFFF',
+                                strokeOpacity: 1,
+                                strokeWeight: 2,
+                                fillColor: '#0000FF',
+                                fillOpacity: 1,
+                                map: activityMap,
+                                center: selectedLocation,
+                                radius: 40,
+                                editable: false,
+                                draggable: false
+                            };
+
+                            mapMarker = new google.maps.Circle(markerOptions);
 
                         }
                     }

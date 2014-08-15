@@ -586,13 +586,19 @@
 
             function drawChart() {
 
-                var rows = [];
+                var dataTable = new google.visualization.DataTable();
+                dataTable.addColumn('number', 'Distance');
+                dataTable.addColumn('number', 'Elevation');
+                // A column for custom tooltip content
+                dataTable.addColumn({ type: 'string', role: 'tooltip' });
+
+                //var rows = [];
 
                 var row = [];
 
-                row.push('Distance');
-                row.push('Elevation');
-                rows.push(row);
+                //row.push('Distance');
+                //row.push('Elevation');
+                //rows.push(row);
 
                 var distanceFromStart = 0;
                 var lastElevation;
@@ -605,11 +611,17 @@
                         distanceFromStart += google.maps.geometry.spherical.computeDistanceBetween(lastElevation.location, elevation.location);
                     }
 
+                    var distanceInMiles = metersToMiles(distanceFromStart);
+                    var elevationInFeet = metersToFeet(elevation.elevation);
+
                     row = [];
-                    row.push(metersToMiles(distanceFromStart));
-                    row.push(metersToFeet(elevation.elevation));
-                    rows.push(row);
-                    
+                    row.push(distanceInMiles);
+                    row.push(elevationInFeet);
+                    row.push("Distance: " + distanceInMiles.toFixed(1) + " mi" + "\nElevation: " + elevationInFeet.toFixed(0) + " ft");
+
+                    //rows.push(row);
+                    dataTable.addRow(row);
+
                     lastElevation = elevation;
 
                     mapDistanceToLocation[metersToMiles(distanceFromStart).toString()] = elevation.location;
@@ -618,7 +630,7 @@
                     //console.log("distance between: " + google.maps.geometry.spherical.computeDistanceBetween(ridePathDecoded[0], ridePathDecoded[1]));
                 });
 
-                var dataTable = google.visualization.arrayToDataTable(rows);
+                //var dataTable = google.visualization.arrayToDataTable(rows);
                 var options = {
                     //chartArea: { left: 20, top: 0, width: '50%', height: '75%' }
                     chartArea: { left: 60, top: 30, width: '60%', height: '70%' },

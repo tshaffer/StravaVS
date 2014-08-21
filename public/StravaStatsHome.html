@@ -560,9 +560,10 @@
                 // Ask for 256 samples along that path.
                 var pathRequest = {
                     'path': ridePathDecoded,
-                    //'samples': 256
-                    //'samples': 40
-                    'samples': 10
+                    //'samples': 100
+                    'samples': 256
+                //'samples': 40
+                    //'samples': 10
             };
 
                 // Initiate the path request.
@@ -605,10 +606,14 @@
 
                 var mapDistanceToLocation = {};
 
+                var distanceFromLastPoint = -1;
+                var elevationAtLastPoint = -1;
+
                 $.each(elevations, function (index, elevation) {
 
                     if (index > 0) {
-                        distanceFromStart += google.maps.geometry.spherical.computeDistanceBetween(lastElevation.location, elevation.location);
+                        distanceFromLastPoint = google.maps.geometry.spherical.computeDistanceBetween(lastElevation.location, elevation.location);
+                        distanceFromStart += distanceFromLastPoint;
                     }
 
                     var distanceInMiles = metersToMiles(distanceFromStart);
@@ -619,23 +624,26 @@
                     row.push(elevationInFeet);
                     //row.push("Distance: " + distanceInMiles.toFixed(1) + " mi" + "\nElevation: " + elevationInFeet.toFixed(0) + " ft");
 
-                    var ttHtml = '<div style="padding:5px 5px 5px 5px;">Distance:<b>' + distanceInMiles.toFixed(1) + 'mi</b><br>Elevation:<b>' + elevationInFeet.toFixed(0) + 'ft</b></div>';
+                    // calculate gradient
+                    var gradient = 0;
+                    if (index > 0) {
+                        // rise over run
+                        gradient = (elevation.elevation - elevationAtLastPoint) / distanceFromLastPoint * 100;
+                    }
+                    var ttHtml = '<div style="padding:5px 5px 5px 5px;">Distance:<b>' + distanceInMiles.toFixed(1) + 'mi</b><br>Elevation:<b>' + elevationInFeet.toFixed(0) + 'ft</b><br>Grade:<b>' + gradient.toFixed(1) + '%</b></div>';
                     row.push(ttHtml);
 
                     //rows.push(row);
                     dataTable.addRow(row);
 
+                    elevationAtLastPoint = elevation.elevation;
+                    
                     lastElevation = elevation;
 
                     mapDistanceToLocation[metersToMiles(distanceFromStart).toString()] = elevation.location;
-
-                    //distanceFromStart += elevation.resolution;
-                    //console.log("distance between: " + google.maps.geometry.spherical.computeDistanceBetween(ridePathDecoded[0], ridePathDecoded[1]));
                 });
 
-                //var dataTable = google.visualization.arrayToDataTable(rows);
                 var options = {
-                    //chartArea: { left: 20, top: 0, width: '50%', height: '75%' }
                     chartArea: { left: 60, top: 30, width: '60%', height: '70%' },
                     hAxis: {
                         format: '## mi',
@@ -654,24 +662,12 @@
                     },
                     tooltip: {
                         isHtml: true
-                    }
-                    //tooltip: {
-                    //    trigger: 'selection'
-                    //    //trigger: 'focus'
-                    //}
-                };
+                    },
+                    curveType: 'function'
+            };
 
                 elevationChart = $('#elevationChart')[0];
                 var chart = new google.visualization.LineChart(elevationChart);
-                //var chart = new google.visualization.AreaChart(elevationChart);
-
-                //chart.setAction({
-                //    id: 'eat pizza',
-                //    text: 'Eat Pizza',
-                //    action: function () {
-                //        alert("Eat more pizza now!!");
-                //    }
-                //});
 
                 chart.draw(dataTable, options);
 
@@ -725,42 +721,6 @@
                     chart.setSelection([{ 'row': null, 'column': null }]);
                 }
             }
-
-    // ELEVATION AT A SINGLE POINT
-                // Create an ElevationService
-            //    var infowindow = new google.maps.InfoWindow();
-            //    var elevator = new google.maps.ElevationService();
-
-            //    var locations = [];
-
-            //    elevationLocation = decodedPath[0];
-            //    locations.push(elevationLocation);
-
-            //    // Create a LocationElevationRequest object using the array's one value
-            //    var positionalRequest = {
-            //        'locations': locations
-            //    }
-
-            //    // Initiate the location request
-            //    elevator.getElevationForLocations(positionalRequest, function (results, status) {
-            //        if (status == google.maps.ElevationStatus.OK) {
-
-            //            // Retrieve the first result
-            //            if (results[0]) {
-
-            //                // Open an info window indicating the elevation at the clicked position
-            //                infowindow.setContent('The elevation at this point <br>is ' + results[0].elevation + ' meters.');
-            //                infowindow.setPosition(elevationLocation);
-            //                infowindow.open(map);
-            //            } else {
-            //                alert('No results found');
-            //            }
-            //        } else {
-            //            alert('Elevation service failed due to: ' + status);
-            //        }
-            //    });
-
-            //}
 
 // UTILITY FUNCTIONS
 

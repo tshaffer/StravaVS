@@ -533,21 +533,6 @@
                     map: activityMap
                 });
 
-// ELEVATION PROTOTYPING
-
-    // ELEVATION ALONG THE RIDE'S PATH
-                //var elevator = new google.maps.ElevationService();
-
-                //// Create a PathElevationRequest object using this array.
-                //// Ask for 256 samples along that path.
-                //var pathRequest = {
-                //    'path': decodedPath,
-                //    //'samples': 256
-                //    'samples': 10
-                //};
-
-                //    // Initiate the path request.
-                //elevator.getElevationAlongPath(pathRequest, elevationCallback);
             }
 
             function buildElevationGraph(selectedActivity) {
@@ -562,8 +547,7 @@
                     'path': ridePathDecoded,
                     //'samples': 100
                     'samples': 256
-                //'samples': 40
-                    //'samples': 10
+                    //'samples': 40
             };
 
                 // Initiate the path request.
@@ -580,8 +564,6 @@
                 //  results[0].resolution: distance between two points (in meters). the same for all points?
                 //  results[0].location: lat, lng object representing the point
 
-                //google.load("visualization", "1", { packages: ["corechart"] });
-                //google.setOnLoadCallback(drawChart);
                 drawChart();
             }
 
@@ -590,16 +572,10 @@
                 var dataTable = new google.visualization.DataTable();
                 dataTable.addColumn('number', 'Distance');
                 dataTable.addColumn('number', 'Elevation');
-                // A column for custom tooltip content
                 dataTable.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
 
-                //var rows = [];
 
                 var row = [];
-
-                //row.push('Distance');
-                //row.push('Elevation');
-                //rows.push(row);
 
                 var distanceFromStart = 0;
                 var lastElevation;
@@ -622,18 +598,15 @@
                     row = [];
                     row.push(distanceInMiles);
                     row.push(elevationInFeet);
-                    //row.push("Distance: " + distanceInMiles.toFixed(1) + " mi" + "\nElevation: " + elevationInFeet.toFixed(0) + " ft");
 
                     // calculate gradient
                     var gradient = 0;
                     if (index > 0) {
-                        // rise over run
                         gradient = (elevation.elevation - elevationAtLastPoint) / distanceFromLastPoint * 100;
                     }
                     var ttHtml = '<div style="padding:5px 5px 5px 5px;">Distance:<b>' + distanceInMiles.toFixed(1) + 'mi</b><br>Elevation:<b>' + elevationInFeet.toFixed(0) + 'ft</b><br>Grade:<b>' + gradient.toFixed(1) + '%</b></div>';
                     row.push(ttHtml);
 
-                    //rows.push(row);
                     dataTable.addRow(row);
 
                     elevationAtLastPoint = elevation.elevation;

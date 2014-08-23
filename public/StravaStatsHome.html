@@ -17,9 +17,17 @@
             display: none;
         }
 
-        #DetailedActivity {
+        #elevationChart {
             position: absolute;
             top: 500px;
+            width: 1800px;
+            height: 200px;
+            display: none;
+        }
+
+        #DetailedActivity {
+            position: absolute;
+            top: 700px;
             width: 1800px;
             height: 800px;
         }
@@ -132,9 +140,14 @@
     </style>
 
     <script src="js/jquery-2.1.1.min.js"></script>
+    <script src="https://www.google.com/jsapi"></script>
     <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=drawing,geometry&key=AIzaSyAQMkpxb9BOWSzHYvNhJz9LZuZqGp0toF4"></script>
 
     <script>
+
+        // load visualization package for later use
+        google.load("visualization", "1", { packages: ["corechart"] });
+
         $(document).ready(function () {
 
 // GLOBAL VARIABLES
@@ -160,6 +173,11 @@
 
             var activitiesToCompare = [];
 
+            var activityMap;
+
+            var ridePathDecoded;
+            var elevations;
+            var mapMarker;
 // RANDOM
 
             function getActivityName(activityId) {
@@ -490,37 +508,199 @@
                     center: myLatlng,
                     mapTypeId: google.maps.MapTypeId.TERRAIN
                 }
-                var map = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
+                activityMap = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
 
                 var pathToDecode = activity.mapPolyline;
-                var decodedPath = google.maps.geometry.encoding.decodePath(pathToDecode);
+                ridePathDecoded = google.maps.geometry.encoding.decodePath(pathToDecode);
                 var decodedLevels = decodeLevels("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
 
-                var elevationLocation;
-
                 var bounds = new google.maps.LatLngBounds();
-                $.each(decodedPath, function (index, location) {
+                $.each(ridePathDecoded, function (index, location) {
                     //var myLatLng = new google.maps.LatLng(location.k, location.B);
                     //var myLatLng = new google.maps.LatLng(location.k, location.A);
                     //bounds.extend(myLatLng);
                     bounds.extend(location);
                 });
 
-                map.fitBounds(bounds);
+                activityMap.fitBounds(bounds);
 
                 var setRegion = new google.maps.Polyline({
-                    path: decodedPath,
+                    path: ridePathDecoded,
                     levels: decodedLevels,
                     strokeColor: "#FF0000",
                     strokeOpacity: 1.0,
                     strokeWeight: 2,
-                    map: map
+                    map: activityMap
                 });
+            }
+
+            function buildElevationGraph(selectedActivity) {
+
+                var elevationLocation;
+
+                var elevator = new google.maps.ElevationService();
+
+                // Create a PathElevationRequest object using the path for the activity.
+                // Ask for 256 samples along that path.
+                var pathRequest = {
+                    'path': ridePathDecoded,
+                    //'samples': 100
+                    'samples': 256
+                    //'samples': 40
+            };
+
+                // Initiate the path request.
+                elevator.getElevationAlongPath(pathRequest, elevationCallback);
+            }
+
+            function elevationCallback(results, status) {
+                if (status != google.maps.ElevationStatus.OK) {
+                    return;
+                }
+                elevations = results;
+
+                //  results[0].elevation: elevation at a point (in meters)
+                //  results[0].resolution: distance between two points (in meters). the same for all points?
+                //  results[0].location: lat, lng object representing the point
+
+                drawChart();
+            }
+
+            function drawChart() {
+
+                var dataTable = new google.visualization.DataTable();
+                dataTable.addColumn('number', 'Distance');
+                dataTable.addColumn('number', 'Elevation');
+                dataTable.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
+
+
+                var row = [];
+
+                var distanceFromStart = 0;
+                var lastElevation;
+
+                var mapDistanceToLocation = {};
+
+                var distanceFromLastPoint = -1;
+                var elevationAtLastPoint = -1;
+
+                $.each(elevations, function (index, elevation) {
+
+                    if (index > 0) {
+                        distanceFromLastPoint = google.maps.geometry.spherical.computeDistanceBetween(lastElevation.location, elevation.location);
+                        distanceFromStart += distanceFromLastPoint;
+                    }
+
+                    var distanceInMiles = metersToMiles(distanceFromStart);
+                    var elevationInFeet = metersToFeet(elevation.elevation);
+
+                    row = [];
+                    row.push(distanceInMiles);
+                    row.push(elevationInFeet);
+
+                    // calculate gradient
+                    var gradient = 0;
+                    if (index > 0) {
+                        gradient = (elevation.elevation - elevationAtLastPoint) / distanceFromLastPoint * 100;
+                    }
+                    var ttHtml = '<div style="padding:5px 5px 5px 5px;">Distance:<b>' + distanceInMiles.toFixed(1) + 'mi</b><br>Elevation:<b>' + elevationInFeet.toFixed(0) + 'ft</b><br>Grade:<b>' + gradient.toFixed(1) + '%</b></div>';
+                    row.push(ttHtml);
+
+                    dataTable.addRow(row);
+
+                    elevationAtLastPoint = elevation.elevation;
+                    
+                    lastElevation = elevation;
+
+                    mapDistanceToLocation[metersToMiles(distanceFromStart).toString()] = elevation.location;
+                });
+
+                var options = {
+                    chartArea: { left: 60, top: 30, width: '60%', height: '70%' },
+                    hAxis: {
+                        format: '## mi',
+                        textStyle: {
+                            fontSize: 10
+                        }
+                    },
+                    vAxis: {
+                        format: '## ft',
+                        textStyle: {
+                            fontSize: 10
+                        }
+                    },
+                    legend: {
+                        position: 'none'
+                    },
+                    tooltip: {
+                        isHtml: true
+                    },
+                    curveType: 'function'
+            };
+
+                elevationChart = $('#elevationChart')[0];
+                var chart = new google.visualization.LineChart(elevationChart);
+
+                chart.draw(dataTable, options);
+
+                // Add our over/out handlers.
+                google.visualization.events.addListener(chart, 'onmouseover', chartMouseOver);
+                google.visualization.events.addListener(chart, 'onmouseout', chartMouseOut);
+
+                function chartMouseOver(e) {
+                    chart.setSelection([e]);
+
+                    var item = chart.getSelection();
+                    if (item != undefined) {
+                        var selectedItem = item[0];
+                        console.log("item selected:  row=" + selectedItem.row + ", column=" + selectedItem.column);
+                        console.log("distance is: " + dataTable.getValue(selectedItem.row, 0));
+                        console.log("elevation is: " + dataTable.getValue(selectedItem.row, selectedItem.column));
+
+                        var selectedLocation = mapDistanceToLocation[dataTable.getValue(selectedItem.row, 0)];
+                        if (selectedLocation != undefined) {
+                            console.log("selected location: ");
+                            console.log(selectedLocation);
+
+                            console.log("lat is: " + selectedLocation.lat() + ", lng is: " + selectedLocation.lng());
+
+                            // erase old marker, if it existed
+                            if (mapMarker != null) {
+                                mapMarker.setMap(null);
+                            }
+
+                            var markerOptions = {
+                                strokeColor: '#FFFFFF',
+                                strokeOpacity: 1,
+                                strokeWeight: 2,
+                                fillColor: '#0000FF',
+                                fillOpacity: 1,
+                                map: activityMap,
+                                center: selectedLocation,
+                                radius: 40,
+                                editable: false,
+                                draggable: false
+                            };
+
+                            mapMarker = new google.maps.Circle(markerOptions);
+
+                        }
+                    }
+
+                }
+
+                function chartMouseOut(e) {
+                    chart.setSelection([{ 'row': null, 'column': null }]);
+                }
             }
 
 // UTILITY FUNCTIONS
 
-            function getDistance(distanceInMeters) {
+            function metersToFeet(meters) {
+                return meters * 3.28084;
+            }
+
+            function metersToMiles(distanceInMeters) {
                 distanceInMiles = distanceInMeters * 0.000621371;
                 return distanceInMiles;
             }
@@ -606,6 +786,7 @@
 
                 $('#RideSummary').hide();               // hide the summary, map, and segment efforts table
                 $('#map-canvas').hide();
+                $('#elevationChart').hide();
                 $('#DetailedActivity').hide();
                 $('#SegmentSummary').show();
                 $('#SegmentEffortsSection').show();    // show the friends segment efforts table
@@ -810,11 +991,12 @@
                 $('#SummaryActivities').hide();
                 $('#RideSummary').show();
                 $('#DetailedActivity').show();
+                $('#elevationChart').show();
                 $('#map-canvas').show();
             }
 
             function getActivityEfforts(activityId, athleteId, activityName) {
-                // get detailed activity data for the current athlete
+                // get detailed activity data for the selected activity
                 $.ajax({
                     url: 'http://localHost:8080/activityEfforts',
                     data: { "activityId": activityId, "athleteId": athleteId, "activityName": activityName },
@@ -834,6 +1016,8 @@
                     buildSegmentEffortsTable(data.detailedEfforts);
 
                     initializeMap(selectedActivity);
+
+                    buildElevationGraph(selectedActivity);
 
                     showActivityDetails();
                 });
@@ -950,6 +1134,8 @@
                 buildActivitiesTable(data);
                 showActivitiesTable();
             });
+
+
 
             var self;
 
@@ -1092,7 +1278,10 @@
             </table>
         </div>
 
-        <div id="map-canvas"</div>
+
+        <div id="elevationChart"></div>
+
+        <div id="map-canvas"></div>
 
     </div>
 </body>

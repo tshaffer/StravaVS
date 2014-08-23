@@ -516,9 +516,6 @@
 
                 var bounds = new google.maps.LatLngBounds();
                 $.each(ridePathDecoded, function (index, location) {
-                    //var myLatLng = new google.maps.LatLng(location.k, location.B);
-                    //var myLatLng = new google.maps.LatLng(location.k, location.A);
-                    //bounds.extend(myLatLng);
                     bounds.extend(location);
                 });
 
@@ -1020,6 +1017,7 @@
             }
 
             function buildElevationGraph(activity) {
+
                 var stream = JSON.parse(activity.stream);
 
                 var distances;
@@ -1081,7 +1079,7 @@
                 }
 
                 var options = {
-                    chartArea: { left: 60, top: 30, width: '60%', height: '70%' },
+                    chartArea: { left: 60, top: 10, height: 160 },
                     hAxis: {
                         format: '## mi',
                         textStyle: {
@@ -1101,12 +1099,31 @@
                         isHtml: true
                     },
                     //curveType: 'function'
+                    width: 1800
                 };
 
                 elevationChart = $('#elevationChart')[0];
                 var chart = new google.visualization.LineChart(elevationChart);
 
                 chart.draw(dataTable, options);
+
+                // draw marker at the beginning of the ride
+                var startLocation = mapDistanceToLocation[dataTable.getValue(0, 0)];
+                var startLatlng = new google.maps.LatLng(startLocation[0], startLocation[1]);
+                var startMarkerOptions = {
+                    strokeColor: '#FFFFFF',
+                    strokeOpacity: 1,
+                    strokeWeight: 2,
+                    fillColor: '#00FF00',
+                    fillOpacity: 1,
+                    map: activityMap,
+                    center: startLatlng,
+                    radius: 50,
+                    editable: false,
+                    draggable: false
+                };
+
+                startMarker = new google.maps.Circle(startMarkerOptions);
 
                 // Add our over/out handlers.
                 google.visualization.events.addListener(chart, 'onmouseover', chartMouseOver);
@@ -1143,7 +1160,7 @@
                                 fillOpacity: 1,
                                 map: activityMap,
                                 center: myLatlng,
-                                radius: 40,
+                                radius: 50,
                                 editable: false,
                                 draggable: false
                             };
@@ -1152,24 +1169,12 @@
 
                         }
                     }
-
                 }
 
                 function chartMouseOut(e) {
                     chart.setSelection([{ 'row': null, 'column': null }]);
                 }
-
-
             }
-
-
-
-
-
-
-
-
-
 
             function showDetails(event) {
                 console.log("button pressed: activityId = " + event.data.activityId + ", athleteId = " + event.data.athleteId);

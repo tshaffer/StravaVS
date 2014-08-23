@@ -534,7 +534,7 @@
                 });
             }
 
-            function buildElevationGraph(selectedActivity) {
+            function buildElevationGraphFromGoogleData(selectedActivity) {
 
                 var elevationLocation;
 
@@ -544,10 +544,8 @@
                 // Ask for 256 samples along that path.
                 var pathRequest = {
                     'path': ridePathDecoded,
-                    //'samples': 100
                     'samples': 256
-                    //'samples': 40
-            };
+                };
 
                 // Initiate the path request.
                 elevator.getElevationAlongPath(pathRequest, elevationCallback);
@@ -563,16 +561,15 @@
                 //  results[0].resolution: distance between two points (in meters). the same for all points?
                 //  results[0].location: lat, lng object representing the point
 
-                drawChart();
+                drawChartFromGoogleData();
             }
 
-            function drawChart() {
+            function drawChartFromGoogleData() {
 
                 var dataTable = new google.visualization.DataTable();
                 dataTable.addColumn('number', 'Distance');
                 dataTable.addColumn('number', 'Elevation');
                 dataTable.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
-
 
                 var row = [];
 
@@ -729,8 +726,6 @@
                 movingTime += minutesStr + ':' + secondsStr;
                 return movingTime;
             }
-
-
 
             function displayFriendSegmentEffort(segmentEffort) {
 
@@ -1017,11 +1012,164 @@
 
                     initializeMap(selectedActivity);
 
+                    //buildElevationGraphFromGoogleData(selectedActivity);
                     buildElevationGraph(selectedActivity);
 
                     showActivityDetails();
                 });
             }
+
+            function buildElevationGraph(activity) {
+                var stream = JSON.parse(activity.stream);
+
+                var distances;
+                var elevations;
+                var gradients;
+                var locations;
+
+                // at this point, stream is an array that includes a number of streams; need to pick out the required stream data
+                for (i = 0; i < stream.length; i++) {
+                    switch (stream[i].type) {
+                        case 'distance':
+                            distances = stream[i].data;
+                            break;
+                        case 'altitude':
+                            elevations = stream[i].data;
+                            break;
+                        case 'grade_smooth':
+                            gradients = stream[i].data;
+                            break;
+                        case 'latlng':
+                            locations = stream[i].data;
+                            break;
+                    }
+                }
+
+                if (distances == undefined || elevations == undefined || gradients == undefined || locations == undefined) {
+                    console.log("stream undefined");
+                    return;
+                }
+
+                var dataTable = new google.visualization.DataTable();
+                dataTable.addColumn('number', 'Distance');
+                dataTable.addColumn('number', 'Elevation');
+                dataTable.addColumn({ type: 'string', role: 'tooltip', 'p': { 'html': true } });
+
+                var row = [];
+                var mapDistanceToLocation = {};
+
+                for (i = 0; i < distances.length; i++) {
+
+                    var distance = distances[i];
+                    var elevation = elevations[i];
+                    var gradient = gradients[i];
+                    var location = locations[i];
+
+                    var distanceInMiles = metersToMiles(distance);
+                    var elevationInFeet = metersToFeet(elevation);
+
+                    row = [];
+                    row.push(distanceInMiles);
+                    row.push(elevationInFeet);
+
+                    var ttHtml = '<div style="padding:5px 5px 5px 5px;">Distance:<b>' + distanceInMiles.toFixed(1) + 'mi</b><br>Elevation:<b>' + elevationInFeet.toFixed(0) + 'ft</b><br>Grade:<b>' + gradient.toFixed(1) + '%</b></div>';
+                    row.push(ttHtml);
+
+                    dataTable.addRow(row);
+
+                    mapDistanceToLocation[metersToMiles(distance).toString()] = location;
+                }
+
+                var options = {
+                    chartArea: { left: 60, top: 30, width: '60%', height: '70%' },
+                    hAxis: {
+                        format: '## mi',
+                        textStyle: {
+                            fontSize: 10
+                        }
+                    },
+                    vAxis: {
+                        format: '## ft',
+                        textStyle: {
+                            fontSize: 10
+                        }
+                    },
+                    legend: {
+                        position: 'none'
+                    },
+                    tooltip: {
+                        isHtml: true
+                    },
+                    //curveType: 'function'
+                };
+
+                elevationChart = $('#elevationChart')[0];
+                var chart = new google.visualization.LineChart(elevationChart);
+
+                chart.draw(dataTable, options);
+
+                // Add our over/out handlers.
+                google.visualization.events.addListener(chart, 'onmouseover', chartMouseOver);
+                google.visualization.events.addListener(chart, 'onmouseout', chartMouseOut);
+
+                function chartMouseOver(e) {
+                    chart.setSelection([e]);
+
+                    var item = chart.getSelection();
+                    if (item != undefined) {
+                        var selectedItem = item[0];
+                        console.log("item selected:  row=" + selectedItem.row + ", column=" + selectedItem.column);
+                        console.log("distance is: " + dataTable.getValue(selectedItem.row, 0));
+                        console.log("elevation is: " + dataTable.getValue(selectedItem.row, selectedItem.column));
+
+                        var selectedLocation = mapDistanceToLocation[dataTable.getValue(selectedItem.row, 0)];
+                        if (selectedLocation != undefined) {
+                            console.log("selected location: ");
+                            console.log(selectedLocation);
+
+                            console.log("lat is: " + selectedLocation[0] + ", lng is: " + selectedLocation[1]);
+                            var myLatlng = new google.maps.LatLng(selectedLocation[0], selectedLocation[1]);
+
+                            // erase old marker, if it existed
+                            if (mapMarker != null) {
+                                mapMarker.setMap(null);
+                            }
+
+                            var markerOptions = {
+                                strokeColor: '#FFFFFF',
+                                strokeOpacity: 1,
+                                strokeWeight: 2,
+                                fillColor: '#0000FF',
+                                fillOpacity: 1,
+                                map: activityMap,
+                                center: myLatlng,
+                                radius: 40,
+                                editable: false,
+                                draggable: false
+                            };
+
+                            mapMarker = new google.maps.Circle(markerOptions);
+
+                        }
+                    }
+
+                }
+
+                function chartMouseOut(e) {
+                    chart.setSelection([{ 'row': null, 'column': null }]);
+                }
+
+
+            }
+
+
+
+
+
+
+
+
+
 
             function showDetails(event) {
                 console.log("button pressed: activityId = " + event.data.activityId + ", athleteId = " + event.data.athleteId);
@@ -1134,8 +1282,6 @@
                 buildActivitiesTable(data);
                 showActivitiesTable();
             });
-
-
 
             var self;
 

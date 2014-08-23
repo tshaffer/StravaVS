@@ -566,6 +566,7 @@ function convertDetailedActivity(detailedActivity) {
     console.log("convertedActivity.startPointLatitude=" + convertedActivity.startPointLatitude);
     convertedActivity.startPointLongitude = detailedActivityData.start_longitude;
     convertedActivity.mapPolyline = detailedActivityData.map.polyline;
+    convertedActivity.stream = detailedActivity.stream;
     return convertedActivity;
 
 }
@@ -591,14 +592,18 @@ function addDetailedActivityToDB(detailedActivity) {
     var startPointLatitude = detailedActivity.start_latitude;
     var startPointLongitude = detailedActivity.start_longitude;
     var mapPolyline = detailedActivity.map.polyline;
+    var stream = detailedActivity.stream;
 
     db.query(
-      "INSERT INTO detailedactivity (activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories, startPointLatitude, startPointLongitude, mapPolyline) " +
-      " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories, startPointLatitude, startPointLongitude, mapPolyline],
+      "INSERT INTO detailedactivity (activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories, startPointLatitude, startPointLongitude, mapPolyline, stream) " +
+      " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories, startPointLatitude, startPointLongitude, mapPolyline, stream],
       function (err) {
-          if (err) throw err;
-          console.log("added detailed activity successfully");
+          //if (err) throw err;
+          if (err) {
+              console.log("error adding detailed activity to db for activityId=" + activityId);
+          }
+          console.log("added detailed activity successfully to db for activityId=" + activityId);
       }
     );
 }
@@ -614,7 +619,7 @@ function fetchDetailedActivityFromStrava(responseData, detailedActivityIdToFetch
         }
     };
 
-    var str = ""
+    var str = "";
 
     https.get(options, function (res) {
         //console.log('STATUS: ' + res.statusCode);
@@ -629,59 +634,78 @@ function fetchDetailedActivityFromStrava(responseData, detailedActivityIdToFetch
         res.on('end', function () {
             console.log("end received for detailedActivityIdToFetchFromServer = " + detailedActivityIdToFetchFromServer);
 
-            idsOfActivitiesFetchedFromStrava.push(detailedActivityIdToFetchFromServer);
-
             // convert string from server into JSON object
             detailedActivityData = JSON.parse(str);
 
-            console.log("detailedActivity from server for id " + detailedActivityIdToFetchFromServer);
+            console.log("detailedActivity received from server for id " + detailedActivityIdToFetchFromServer);
             console.log(detailedActivityData);
 
-            var startPointLatitude = detailedActivityData.start_latitude;
-            //var startPointLongitude = detailedActivityData.start_longitude;
-            //console.log("type of startPointLatitude is " + typeof startPointLatitude);
-            console.log("startPointLatitude=" + startPointLatitude);
-            //console.log("startPointLongitude=" + startPointLongitude);
-            var mapPolyline = detailedActivityData.map.polyline;
-            console.log("mapPolyline=" + mapPolyline);
-            //var mapSummaryPolyline = detailedActivityData.map.summary_polyline;
-            //console.log("mapSummaryPolyline=" + mapSummaryPolyline);
+            // next, retrieve stream for this activity
+            str = "";
 
-
-
-            // convert from Strava JSON format into the format digestible by the db
-            convertedActivity = convertDetailedActivity(detailedActivityData);
-            responseData.detailedActivitiesToReturn.push(convertedActivity);
-
-            // retrieve segment effort ids (and segment id's?) from detailed activity
-            segmentEfforts = detailedActivityData.segment_efforts;
-            console.log("number of segment efforts for this activity is " + segmentEfforts.length);
-
-            segmentEfforts.forEach(addSegmentEffortIdToDB);
-            function addSegmentEffortIdToDB(segmentEffort, index, array) {
-                //console.log("add segmentEffort id " + segmentEffort.id + ", activity id = " + detailedActivityIdToFetchFromServer + ", segment id = " + segmentEffort.segment.id);
-                db.query(
-                  "INSERT INTO segmenteffortids (segmentEffortId, activityId, segmentId) " +
-                  " VALUES (?, ?, ?)",
-                  [segmentEffort.id.toString(), detailedActivityIdToFetchFromServer.toString(), segmentEffort.segment.id.toString()],
-                  function (err) {
-                      //if (err) throw err;
-                      if (err) {
-                          console.log("error adding segmenteffortid to db");
-                      }
-                  }
-                );
+            options = {
+                host: 'www.strava.com',
+                path: '/api/v3/activities/' + detailedActivityIdToFetchFromServer.toString() + '/streams/time,latlng,distance,altitude,grade_smooth',
+                port: 443,
+                headers: {
+                    'Authorization': 'Bearer ' + responseData.accessToken
+                }
             };
 
-            // add detailed activity to the database
-            addDetailedActivityToDB(detailedActivityData);
+            https.get(options, function (streamResponse) {
+                console.log('STATUS: ' + streamResponse.statusCode);
+                console.log('HEADERS: ' + JSON.stringify(streamResponse.headers));
 
-            console.log("check for completion");
-            if (idsOfActivitiesFetchedFromStrava.length == Object.keys(detailedActivityIdsToFetchFromServer).length) {
-                console.log("all detailed activities fetched from strava");
-                sendActivitiesResponse(responseData.serverResponse, responseData.detailedActivitiesToReturn);
-                return;
-            }
+                streamResponse.on('data', function (d) {
+                    str += d;
+                    console.log("steam chunk received for detailedActivityIdToFetchFromServer = " + detailedActivityIdToFetchFromServer);
+                });
+
+                streamResponse.on('end', function () {
+                    console.log("end received for stream fetch of detailedActivityIdToFetchFromServer = " + detailedActivityIdToFetchFromServer);
+
+                    idsOfActivitiesFetchedFromStrava.push(detailedActivityIdToFetchFromServer);
+
+                    // what is the length of the stream?
+                    detailedActivityData.stream = str;
+                    console.log("length of stream string is: " + detailedActivityData.stream.length);
+
+                    // convert from Strava JSON format into the format digestible by the db
+                    convertedActivity = convertDetailedActivity(detailedActivityData);
+                    responseData.detailedActivitiesToReturn.push(convertedActivity);
+
+                    // retrieve segment effort ids (and segment id's?) from detailed activity
+                    segmentEfforts = detailedActivityData.segment_efforts;
+                    console.log("number of segment efforts for this activity is " + segmentEfforts.length);
+
+                    segmentEfforts.forEach(addSegmentEffortIdToDB);
+                    function addSegmentEffortIdToDB(segmentEffort, index, array) {
+                        //console.log("add segmentEffort id " + segmentEffort.id + ", activity id = " + detailedActivityIdToFetchFromServer + ", segment id = " + segmentEffort.segment.id);
+                        db.query(
+                          "INSERT INTO segmenteffortids (segmentEffortId, activityId, segmentId) " +
+                          " VALUES (?, ?, ?)",
+                          [segmentEffort.id.toString(), detailedActivityIdToFetchFromServer.toString(), segmentEffort.segment.id.toString()],
+                          function (err) {
+                              //if (err) throw err;
+                              if (err) {
+                                  console.log("error adding segmenteffortid to db");
+                              }
+                          }
+                        );
+                    };
+
+                    // add detailed activity to the database
+                    addDetailedActivityToDB(detailedActivityData);
+
+                    console.log("check for completion");
+                    if (idsOfActivitiesFetchedFromStrava.length == Object.keys(detailedActivityIdsToFetchFromServer).length) {
+                        console.log("all detailed activities fetched from strava");
+                        sendActivitiesResponse(responseData.serverResponse, responseData.detailedActivitiesToReturn);
+                        return;
+                    }
+                });
+
+            });
         });
 
     }).on('error', function () {

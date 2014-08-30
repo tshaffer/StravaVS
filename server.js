@@ -1,4 +1,5 @@
 var dbHostName = '127.0.0.1';
+//var dbHostName = 'stravadb.cohsjqy0hofx.us-west-1.rds.amazonaws.com';
 
 var http = require('http');
 var https = require('https');
@@ -1093,8 +1094,10 @@ function initDB() {
 
     db = mysql.createConnection({
         host: dbHostName,
-        user: 'ted',
-        password: 'ted69',
+        //user: 'ted',
+        //password: 'ted69',
+        user: 'stravaTed',
+        password: 'strava-69',
         database: 'strava'
     });
 
@@ -1103,9 +1106,12 @@ function initDB() {
     db.connect();
 
     db.query(
-      "CREATE TABLE IF NOT EXISTS authenticatedAthlete ("
+      "CREATE TABLE IF NOT EXISTS authenticatedathlete ("
       + "athleteId VARCHAR(32) NOT NULL, "
       + "authorizationKey VARCHAR(64) NOT NULL,"
+      + "firstname VARCHAR(32) NOT NULL, "
+      + "lastname VARCHAR(32) NOT NULL, "
+      + "email VARCHAR(64) NOT NULL, "
       + "PRIMARY KEY(athleteId))",
       function (err) {
           if (err) throw err;
@@ -1115,7 +1121,7 @@ function initDB() {
     );
 
     db.query(
-      "CREATE TABLE IF NOT EXISTS detailedActivity ("
+      "CREATE TABLE IF NOT EXISTS detailedactivity ("
       + "activityId VARCHAR(32) NOT NULL, "
       + "athleteId VARCHAR(32) NOT NULL, "
       + "name VARCHAR(64) NOT NULL, "

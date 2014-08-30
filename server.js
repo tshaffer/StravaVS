@@ -1,3 +1,5 @@
+var dbHostName = '127.0.0.1';
+
 var http = require('http');
 var https = require('https');
 var fs = require('fs');
@@ -651,7 +653,7 @@ function fetchStreamFromStrava(responseData, detailedActivityData, detailedActiv
 
     var str = "";
 
-    options = {
+    var options = {
         host: 'www.strava.com',
         path: '/api/v3/activities/' + detailedActivityIdToFetchFromServer.toString() + '/streams/time,latlng,distance,altitude,grade_smooth',
         port: 443,
@@ -1090,7 +1092,7 @@ function initDB() {
     console.log('create connection');
 
     db = mysql.createConnection({
-        host: '127.0.0.1',
+        host: dbHostName,
         user: 'ted',
         password: 'ted69',
         database: 'strava'

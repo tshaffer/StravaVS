@@ -140,6 +140,7 @@
     </style>
 
     <script src="js/jquery-2.1.1.min.js"></script>
+    <script src="config.js"></script>
     <script src="https://www.google.com/jsapi"></script>
     <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=drawing,geometry&key=AIzaSyAQMkpxb9BOWSzHYvNhJz9LZuZqGp0toF4"></script>
 
@@ -271,7 +272,7 @@
                 var activityName = getActivityName(activityId);
 
                 $.ajax({
-                    url: 'http://localHost:8080/activityEfforts',
+                    url: 'http://' + hostName + ':8080/activityEfforts',
                     data: { "activityId": activityId, "athleteId": athleteId, "activityName": activityName },
 
                     type: 'GET',
@@ -299,7 +300,7 @@
             function retrieveBestEfforts(segmentIds, rowLabels) {
 
                 $.ajax({
-                    url: 'http://localHost:8080/bestTimes',
+                    url: 'http://' + hostName + ':8080/bestTimes',
                     data: { "segmentIds": segmentIds },
 
                     type: 'GET',
@@ -447,7 +448,7 @@
 
                 // retrieve master activity
                 $.ajax({
-                    url: 'http://localHost:8080/activityEfforts',
+                    url: 'http://' + hostName + ':8080/activityEfforts',
                     data: { "activityId": masterActivityId, "athleteId": athleteId, "activityName": masterActivityName },
 
                     type: 'GET',
@@ -807,7 +808,7 @@
 
                 // get summary activities for the specified athlete
                 $.ajax({
-                    url: 'http://localHost:8080/allEfforts',
+                    url: 'http://' + hostName + ':8080/allEfforts',
                     data: { "segment_id": segment.segmentId.toString(), "athlete_id": athleteId, "friend_id": friendId.toString() },
 
                     type: 'GET',
@@ -847,7 +848,7 @@
 
                 // get friends for the authenticated athlete
                 $.ajax({
-                    url: 'http://localHost:8080/friends',
+                    url: 'http://' + hostName + ':8080/friends',
                     data: { "athleteId": athleteId.toString() },
                     type: 'GET',
                     dataType: 'json',
@@ -990,7 +991,7 @@
             function getActivityEfforts(activityId, athleteId, activityName) {
                 // get detailed activity data for the selected activity
                 $.ajax({
-                    url: 'http://localHost:8080/activityEfforts',
+                    url: 'http://' + hostName + ':8080/activityEfforts',
                     data: { "activityId": activityId, "athleteId": athleteId, "activityName": activityName },
 
                     type: 'GET',
@@ -1269,7 +1270,7 @@
 
             // get summary activities for the current athlete
             $.ajax({
-                url: 'http://localHost:8080/athleteActivities',
+                url: 'http://' + hostName + ':8080/athleteActivities',
                 type: 'GET',
                 dataType: 'json',
                 data: { "athleteId": athleteId.toString() },

@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <title>StravaStatsByTed</title>
+    <script src="config.js"></script>
     <script src="js/jquery-2.1.1.min.js"></script>
 
     <script>
@@ -11,7 +12,7 @@
             $("#btnConnect").click(function () {
                 //window.location.replace("https://www.strava.com/oauth/authorize?client_id=2055&response_type=code&redirect_uri=http://localHost:8080/tokenExchange.html&approval_prompt=force");
                 //window.location.replace("https://www.strava.com/oauth/authorize?client_id=2055&response_type=code&redirect_uri=http://localHost:8080/tokenExchange.html");
-                window.location.replace("https://www.strava.com/oauth/authorize?client_id=2055&response_type=code&redirect_uri=http://localHost:8080/StravaStatsHome.html");
+                window.location.replace("https://www.strava.com/oauth/authorize?client_id=2055&response_type=code&redirect_uri=http://" + hostName + ":8080/StravaStatsHome.html");
             });
         });
     </script>

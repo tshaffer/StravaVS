@@ -1,5 +1,5 @@
-var dbHostName = '127.0.0.1';
-//var dbHostName = 'stravadb.cohsjqy0hofx.us-west-1.rds.amazonaws.com';
+//var dbHostName = '127.0.0.1';
+var dbHostName = 'stravadb.cohsjqy0hofx.us-west-1.rds.amazonaws.com';
 
 var http = require('http');
 var https = require('https');
@@ -13,10 +13,10 @@ var cache = {};
 
 function getMySqlDateTime(isoDateTime) {
     jsDateTime = new Date(isoDateTime);
-    console.log("jsDateTime = " + jsDateTime);
+    //console.log("jsDateTime = " + jsDateTime);
 
     // date conversion
-    var year, month, day;
+    var year, month, day, hours, minutes, seconds;
     year = String(jsDateTime.getFullYear());
     month = String(jsDateTime.getMonth() + 1);
     if (month.length == 1) {
@@ -590,21 +590,27 @@ function addDetailedActivityToDB(detailedActivity) {
     var maxSpeed = detailedActivity.max_speed * 2.23694;
     var calories = detailedActivity.calories;
     var startDateTime = getMySqlDateTime(detailedActivity.start_date);
-    console.log("mySql datetime = " + startDateTime);
+    //console.log("mySql datetime = " + startDateTime);
     var startPointLatitude = detailedActivity.start_latitude;
     var startPointLongitude = detailedActivity.start_longitude;
+    //var startPointLatitude = detailedActivity.startPointLatitude;
+    //var startPointLongitude = detailedActivity.startPointLongitude;
     var mapPolyline = detailedActivity.map.polyline;
     var stream = detailedActivity.stream;
+
+    console.log("startPointLatitude: " + startPointLatitude);
 
     db.query(
       "INSERT INTO detailedactivity (activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories, startPointLatitude, startPointLongitude, mapPolyline, stream) " +
       " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [activityId, athleteId, name, description, distance, movingTime, elapsedTime, totalElevationGain, startDateTime, averageSpeed, maxSpeed, calories, startPointLatitude, startPointLongitude, mapPolyline, stream],
       function (err) {
-          //if (err) throw err;
-          if (err) {
-              console.log("error adding detailed activity to db for activityId=" + activityId);
-          }
+          //console.log("detailedActivity = ");
+          //console.log(detailedActivity);
+          if (err) throw err;
+          //if (err) {
+          //    console.log("error adding detailed activity to db for activityId=" + activityId);
+          //}
           console.log("added detailed activity successfully to db for activityId=" + activityId);
       }
     );
@@ -682,7 +688,7 @@ function fetchStreamFromStrava(responseData, detailedActivityData, detailedActiv
             console.log("length of stream string is: " + detailedActivityData.stream.length);
 
             // convert from Strava JSON format into the format digestible by the db
-            convertedActivity = convertDetailedActivity(detailedActivityData);
+            var convertedActivity = convertDetailedActivity(detailedActivityData);
             responseData.detailedActivitiesToReturn.push(convertedActivity);
 
             // retrieve segment effort ids (and segment id's?) from detailed activity
@@ -1134,6 +1140,10 @@ function initDB() {
       + "averageSpeed FLOAT NOT NULL, "
       + "maxSpeed FLOAT NOT NULL, "
       + "calories INT NOT NULL, "
+      + "startPointLatitude DOUBLE NOT NULL, "
+      + "startPointLongitude DOUBLE NOT NULL, "
+      + "mapPolyline TEXT NOT NULL, "
+      + "stream LONGTEXT NOT NULL, "
       + "PRIMARY KEY(activityId))",
       function (err) {
           if (err) throw err;

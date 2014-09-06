@@ -956,8 +956,12 @@ function performTokenExchange(response, code) {
                         } else {
                             // replace placeholder for athlete id with the real value
                             console.log("search for data-athlete");
+                            console.log("replace athleteIdPlaceholder with " + authenticationData.athleteId);
+                            console.log("type of athleteId is " + typeof authenticationData.athleteId);
                             var dataAsStr = String(data);
-                            var finalDataAsStr = dataAsStr.replace("athleteIdPlaceholder", authenticationData.athleteId);
+                            console.log("search/replace string:");
+                            console.log(dataAsStr);
+                            var finalDataAsStr = dataAsStr.replace("athleteIdPlaceholder", authenticationData.athleteId.toString());
                             finalDataAsStr = finalDataAsStr.replace("athleteNamePlaceholder", authenticationData.athlete.firstname + " " + authenticationData.athlete.lastname);
                             sendFile(response, absPath, finalDataAsStr);
                         }
@@ -1219,16 +1223,36 @@ var server = http.createServer(function (request, response) {
     var filePath = false;
 
     parsedUrl = url.parse(request.url, true);
+
+    console.log("request url");
     console.log(request.url);
+    console.log("parsed url pathname");
     console.log(parsedUrl.pathname);
+    console.log("parsed url query");
     console.log(parsedUrl.query);
 
-    if (parsedUrl.pathname == '/StravaStatsHome.html') {                  // complete authentication
+    if (parsedUrl.pathname == '/StravaStatsHome.html') {
+
+        // browser is asking for the main app. this implies one of the following
+        //      user is invoking the app by trying to connect to it - need to authenticate
+        //      user is navigating to the app via the Back or Forward button
+        //      user hits Refresh on the browser while in the app
+        //      user goes to a Bookmark that points to the app
+
         console.log("StravaStatsHome invoked");
-        console.log("query is ");
-        console.log(parsedUrl.query);
-        performTokenExchange(response, parsedUrl.query.code);
-        return;
+
+        if (parsedUrl.query.code != undefined) {
+            console.log("query parameter 'code' exists - complete authentication");
+
+            // user is invoking the app by trying to connect to it
+
+            // complete authentication
+            performTokenExchange(response, parsedUrl.query.code);
+            return;
+        }
+        else {
+            filePath = 'public/StravaStatsHome.html';
+        }
     }
     else if (parsedUrl.pathname == '/athleteActivities') {          // web service call
         responseData.athleteId = parsedUrl.query.athleteId;
@@ -1287,6 +1311,7 @@ var server = http.createServer(function (request, response) {
         filePath = "public" + parsedUrl.pathname;
     }
     var absPath = './' + filePath;
+    console.log("absPath = " + absPath);
     serveStatic(response, cache, absPath);
 });
 

@@ -152,6 +152,7 @@
         $(document).ready(function () {
 
 // GLOBAL VARIABLES
+            var firstTimeFoo = true;
 
             var athleteId;
             var athleteName;
@@ -175,7 +176,7 @@
             var activitiesToCompare = [];
 
             var activityMap;
-
+            var activityPath;
             var ridePathDecoded;
             var elevations;
             var mapMarker;
@@ -196,8 +197,8 @@
 
             function buildActivityRow(activity) {
 
-                console.log("buildActivityRow invoked, activity is ");
-                console.log(activity);
+                //console.log("buildActivityRow invoked, activity is ");
+                //console.log(activity);
 
                 // activityName
                 var activityName = activity.name;
@@ -232,8 +233,10 @@
                 $('#activitiesTable').append(rowToAdd);
 
                 // add button handler for this particular activity
-                var btnId = "#" + activityId;
-                $(btnId).click({ activityId: activityId, athleteId: athleteId, activityName: activityName, activity: activity }, showDetails);
+                if (firstTimeFoo) {
+                    var btnId = "#" + activityId;
+                    $(btnId).click({ activityId: activityId, athleteId: athleteId, activityName: activityName, activity: activity }, showDetails);
+                }
             }
 
             function buildActivitiesTable(activities) {
@@ -261,13 +264,17 @@
                 $('#SegmentEffortsSection').hide();
                 $('#DetailedActivity').hide();
                 $('#RideSummary').hide();
+                $('#ComparedActivities').hide();
+                $('#SegmentSummary').hide();
+                $('#elevationChart').hide();
+                $('#map-canvas').hide();
                 $('#SummaryActivities').show();
             }
 
             // retrieves the activities, one at a time
             function retrieveActivity(activityIds, activityId) {
 
-                console.log("retrieveActivity invoked, activityId: " + activityId);
+                //console.log("retrieveActivity invoked, activityId: " + activityId);
 
                 var activityName = getActivityName(activityId);
 
@@ -280,9 +287,9 @@
                     error: function () { alert('Failed!'); },
                 })
                 .success(function (data, textStatus, jqXHR) {
-                    console.log("retrieveActivity success");
+                    //console.log("retrieveActivity success");
                     //console.log(textStatus);
-                    console.log(data);
+                    //console.log(data);
 
                     // do something with this activity (push it?)
                     activitiesToCompare.push(data);
@@ -308,9 +315,9 @@
                     error: function () { alert('Failed!'); },
                 })
                 .success(function (data, textStatus, jqXHR) {
-                    console.log("retrieveBestTimes success");
+                    //console.log("retrieveBestTimes success");
                     //console.log(textStatus);
-                    console.log(data);
+                    //console.log(data);
 
                     buildComparisonData2(segmentIds, rowLabels, data);
                 });
@@ -334,8 +341,8 @@
 
             function buildComparisonData2(masterSegmentIds, rowLabels, bestTimesBySegment)
             {
-                console.log("buildComparisonData2: bestTimesBySegment");
-                console.log(bestTimesBySegment);
+                //console.log("buildComparisonData2: bestTimesBySegment");
+                //console.log(bestTimesBySegment);
 
                 var columns = [];
 
@@ -362,7 +369,7 @@
                     columns.push(column);
                 });
 
-                console.log(columns);
+                //console.log(columns);
 
                 // for each segment in masterSegments
                 // output rowLabel
@@ -385,7 +392,7 @@
 
                     // best time ever for this segment
                     bestTime = bestTimesBySegment[masterSegmentId];
-                    console.log("bestTime: " + bestTime);
+                    //console.log("bestTime: " + bestTime);
 
                     var rowToAdd = "<tr><td>" + rowLabels[masterSegmentIdIndex] + "</td>";
                     $.each(columns, function (columnIndex, column) {
@@ -433,8 +440,8 @@
             }
 
             function compareActivities(activityIds) {
-                console.log("compareActivities invoked, activityIds:");
-                console.log(activityIds);
+                //console.log("compareActivities invoked, activityIds:");
+                //console.log(activityIds);
 
                 // retrieve all of the selected activities first
                 var activityId = activityIds.shift();
@@ -456,9 +463,9 @@
                     error: function () { alert('Failed!'); },
                 })
                 .success(function (data, textStatus, jqXHR) {
-                    console.log("success");
-                    console.log(textStatus);
-                    console.log(data);
+                    //console.log("success");
+                    //console.log(textStatus);
+                    //console.log(data);
 
                     var masterActivity = data;
 
@@ -470,11 +477,11 @@
                         masterSegmentIds.push(detailedEffort.segmentId);
                     });
 
-                    console.log("rowLabels: ");
-                    console.log(rowLabels);
+                    //console.log("rowLabels: ");
+                    //console.log(rowLabels);
 
-                    console.log("masterSegmentIds:");
-                    console.log(masterSegmentIds);
+                    //console.log("masterSegmentIds:");
+                    //console.log(masterSegmentIds);
 
                 });
 
@@ -498,10 +505,8 @@
             }
 
             function initializeMap(activity) {
-                console.log("initializeMap: activity is");
-                console.log(activity);
-
-                console.log("type of start point latitude is " + typeof activity.startPointLatitude);
+                //console.log("initializeMap: activity is");
+                //console.log(activity);
 
                 var myLatlng = new google.maps.LatLng(activity.startPointLatitude, activity.startPointLongitude);
                 var myOptions = {
@@ -509,20 +514,44 @@
                     center: myLatlng,
                     mapTypeId: google.maps.MapTypeId.TERRAIN
                 }
-                activityMap = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
+
+                var createNewMap;
+                if (activityMap == undefined) {
+                    createNewMap = true;
+                }
+                else {
+                    createNewMap = false;
+                }
+
+                if (createNewMap) {
+                    activityMap = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
+                }
+                else {
+                    activityMap.setZoom(14);
+                    activityMap.setCenter(myLatlng);
+                    if (activityPath != undefined) {
+                        activityPath.setMap(null);
+                    }
+                }
 
                 var pathToDecode = activity.mapPolyline;
                 ridePathDecoded = google.maps.geometry.encoding.decodePath(pathToDecode);
                 var decodedLevels = decodeLevels("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
+
+                var existingBounds = activityMap.getBounds();
 
                 var bounds = new google.maps.LatLngBounds();
                 $.each(ridePathDecoded, function (index, location) {
                     bounds.extend(location);
                 });
 
-                activityMap.fitBounds(bounds);
-
-                var setRegion = new google.maps.Polyline({
+                if (createNewMap) {
+                    activityMap.fitBounds(bounds);
+                }
+                else {
+                    setTimeout(function () { activityMap.fitBounds(bounds); }, 1);
+                }
+                activityPath = new google.maps.Polyline({
                     path: ridePathDecoded,
                     levels: decodedLevels,
                     strokeColor: "#FF0000",
@@ -648,16 +677,15 @@
                     var item = chart.getSelection();
                     if (item != undefined) {
                         var selectedItem = item[0];
-                        console.log("item selected:  row=" + selectedItem.row + ", column=" + selectedItem.column);
-                        console.log("distance is: " + dataTable.getValue(selectedItem.row, 0));
-                        console.log("elevation is: " + dataTable.getValue(selectedItem.row, selectedItem.column));
+                        //console.log("item selected:  row=" + selectedItem.row + ", column=" + selectedItem.column);
+                        //console.log("distance is: " + dataTable.getValue(selectedItem.row, 0));
+                        //console.log("elevation is: " + dataTable.getValue(selectedItem.row, selectedItem.column));
 
                         var selectedLocation = mapDistanceToLocation[dataTable.getValue(selectedItem.row, 0)];
                         if (selectedLocation != undefined) {
-                            console.log("selected location: ");
-                            console.log(selectedLocation);
-
-                            console.log("lat is: " + selectedLocation.lat() + ", lng is: " + selectedLocation.lng());
+                            //console.log("selected location: ");
+                            //console.log(selectedLocation);
+                            //console.log("lat is: " + selectedLocation.lat() + ", lng is: " + selectedLocation.lng());
 
                             // erase old marker, if it existed
                             if (mapMarker != null) {
@@ -745,7 +773,7 @@
 
                 effortsNameHidden = hideName;
 
-                console.log('displaySummarySegmentEfforts invoked, segmentName=' + segmentName);
+                //console.log('displaySummarySegmentEfforts invoked, segmentName=' + segmentName);
 
                 buildSegmentSummary(segment);
 
@@ -788,7 +816,7 @@
 
             function getSummarySegmentEfforts(segment, hideName) {
 
-                console.log('getSummarySegmentEfforts invoked:' + segment.segmentId + ' ' + segment.segmentName);
+                //console.log('getSummarySegmentEfforts invoked:' + segment.segmentId + ' ' + segment.segmentName);
 
                 // get the id of the next athlete
                 if (Object.keys(athletes).length == 0) {
@@ -802,9 +830,9 @@
                     break;
                 }
 
-                console.log('athlete id, name:');
-                console.log(friendId);
-                console.log(athleteName);
+                //console.log('athlete id, name:');
+                //console.log(friendId);
+                //console.log(athleteName);
 
                 // get summary activities for the specified athlete
                 $.ajax({
@@ -816,9 +844,9 @@
                     error: function () { alert('Failed!'); },
                 })
                 .success(function (data, textStatus, jqXHR) {
-                    console.log("allEfforts success");
-                    console.log(textStatus);
-                    console.log(data);
+                    //console.log("allEfforts success");
+                    //console.log(textStatus);
+                    //console.log(data);
 
                     summarySegmentEffort = {};
                     summarySegmentEffort.athleteId = friendId;
@@ -831,10 +859,9 @@
             }
 
             function showMyEfforts(event) {
-                console.log("athleteId is " + athleteId);
-
-                console.log("button pressed: id = " + event.data.id.toString());
-                console.log(event.data);
+                //console.log("athleteId is " + athleteId);
+                //console.log("button pressed: id = " + event.data.id.toString());
+                //console.log(event.data);
 
                 athletes = {};
                 athletes[athleteId] = athleteName;
@@ -855,9 +882,9 @@
                     error: function () { alert('Failed!'); },
                 })
                 .success(function (data, textStatus, jqXHR) {
-                    console.log("friends success");
-                    console.log(textStatus);
-                    console.log(data);
+                    //console.log("friends success");
+                    //console.log(textStatus);
+                    //console.log(data);
 
                     athletes = {};
 
@@ -914,7 +941,7 @@
 
             function buildSegmentSummary(segment) {
 
-                console.log("buildSegmentSummary invoked");
+                //console.log("buildSegmentSummary invoked");
 
                 // segment name
                 var segmentName = segment.segmentEffortName;
@@ -938,8 +965,8 @@
 
                 activity = selectedActivity;
 
-                console.log("buildRideSummary invoked, activity is ");
-                console.log(activity);
+                //console.log("buildRideSummary invoked, activity is ");
+                //console.log(activity);
 
                 // activityName
                 activityName = activity.name;
@@ -999,9 +1026,9 @@
                     error: function () { alert('Failed!'); },
                 })
                 .success(function (data, textStatus, jqXHR) {
-                    console.log("success");
-                    console.log(textStatus);
-                    console.log(data);
+                    //console.log("success");
+                    //console.log(textStatus);
+                    //console.log(data);
 
                     buildRideSummary();
 
@@ -1136,16 +1163,16 @@
                     var item = chart.getSelection();
                     if (item != undefined) {
                         var selectedItem = item[0];
-                        console.log("item selected:  row=" + selectedItem.row + ", column=" + selectedItem.column);
-                        console.log("distance is: " + dataTable.getValue(selectedItem.row, 0));
-                        console.log("elevation is: " + dataTable.getValue(selectedItem.row, selectedItem.column));
+                        //console.log("item selected:  row=" + selectedItem.row + ", column=" + selectedItem.column);
+                        //console.log("distance is: " + dataTable.getValue(selectedItem.row, 0));
+                        //console.log("elevation is: " + dataTable.getValue(selectedItem.row, selectedItem.column));
 
                         var selectedLocation = mapDistanceToLocation[dataTable.getValue(selectedItem.row, 0)];
                         if (selectedLocation != undefined) {
-                            console.log("selected location: ");
-                            console.log(selectedLocation);
+                            //console.log("selected location: ");
+                            //console.log(selectedLocation);
 
-                            console.log("lat is: " + selectedLocation[0] + ", lng is: " + selectedLocation[1]);
+                            //console.log("lat is: " + selectedLocation[0] + ", lng is: " + selectedLocation[1]);
                             var myLatlng = new google.maps.LatLng(selectedLocation[0], selectedLocation[1]);
 
                             // erase old marker, if it existed
@@ -1178,11 +1205,15 @@
             }
 
             function showDetails(event) {
-                console.log("button pressed: activityId = " + event.data.activityId + ", athleteId = " + event.data.athleteId);
+                //console.log("button pressed: activityId = " + event.data.activityId + ", athleteId = " + event.data.athleteId);
 
                 selectedActivity = event.data.activity;
-
                 getActivityEfforts(event.data.activityId, event.data.athleteId, event.data.activityName);
+
+                var stateObj = { athleteId: athleteId, stravaState: "activityDetails", activityId: event.data.activityId };
+                console.log("pushState activityDetails, stateObj: ");
+                console.log(stateObj);
+                history.pushState(stateObj, null, "StravaStatsHome.html?athleteId=" + athleteId + "&stravaState=activityDetails&activityId=" + event.data.activityId);
             }
 
             function sortAscending(a, b) {
@@ -1261,51 +1292,220 @@
             }
 
             // get athleteId
-            athleteId = $('body').data('athleteid');
-            console.log("athleteId is ");
-            console.log(athleteId);
-            athleteName = $('body').data('athletename');
-            console.log("athleteName is ");
-            console.log(athleteName);
+            //athleteId = $('body').data('athleteid');
+            //console.log("athleteId is ");
+            //console.log(athleteId);
+            //athleteName = $('body').data('athletename');
+            //console.log("athleteName is ");
+            //console.log(athleteName);
 
-            // get summary activities for the current athlete
-            $.ajax({
-                url: 'http://' + hostName + ':8080/athleteActivities',
-                type: 'GET',
-                dataType: 'json',
-                data: { "athleteId": athleteId.toString() },
-                error: function () { alert('Failed!'); },
-            })
-            .success(function (data, textStatus, jqXHR) {
-                console.log("success");
-                console.log(textStatus);
-                console.log(data);
+            //// get summary activities for the current athlete
+            //$.ajax({
+            //    url: 'http://' + hostName + ':8080/athleteActivities',
+            //    type: 'GET',
+            //    dataType: 'json',
+            //    data: { "athleteId": athleteId.toString() },
+            //    error: function () { alert('Failed!'); },
+            //})
+            //.success(function (data, textStatus, jqXHR) {
+            //    //console.log("success");
+            //    //console.log(textStatus);
+            //    //console.log(data);
 
-                sortActivitiesByDate(data);
+            //    currentActivities = data;
 
-                currentActivities = data;
+            //    sortActivitiesByDate(currentActivities);
+            //    buildActivitiesTable(currentActivities);
+            //    showActivitiesTable();
 
-                buildActivitiesTable(data);
-                showActivitiesTable();
-            });
+            //    // is this the appropriate point in the code to invoke pushState?
+            //    console.log("pushState activities");
+            //    var stateObj = { athleteId: athleteId, stravaState: "summaryActivities" };
+            //    history.pushState(stateObj, null, "StravaStatsHome.html");
+            //});
 
             var self;
 
+            function getParameterByName(name, stringToSearch) {
+                console.log("stringToSearch: " + stringToSearch);
+                name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+                var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+                    //results = regex.exec(location.search);
+                    results = regex.exec(stringToSearch);
+                return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+            }
+
+            function startup() {
+
+                //console.log("document.URL: " + document.URL);
+                //console.log("window.location");
+                //console.log(window.location);
+                ////console.log("location.search");
+                ////console.log(document.location.search);
+                //console.log("document.location");
+                //var href = document.location.href;
+                //console.log(document.location);
+                //console.log("retrieving information from document.location, query parameters:");
+                ////console.log("athleteId: " + getParameterByName("athleteId", document.location.search));
+                ////console.log("stravaState: " + getParameterByName("stravaState", document.location.search));
+                ////console.log("athleteId: " + getParameterByName("athleteId", document.location.href));
+                ////console.log("stravaState: " + getParameterByName("stravaState", document.location.href));
+                //console.log("href");
+                //console.log(href);
+                //console.log("athleteId: " + getParameterByName("athleteId", href));
+                //console.log("stravaState: " + getParameterByName("stravaState", href));
+                //console.log("href");
+                //console.log(href);
+
+                //athleteId = $('body').data('athleteid');
+
+                console.log("startup() invoked");
+                console.log("athleteId is ");
+                console.log(athleteId);
+                athleteName = $('body').data('athletename');
+                console.log("athleteName is ");
+                console.log(athleteName);
+
+                // get summary activities for the current athlete
+                $.ajax({
+                    url: 'http://' + hostName + ':8080/athleteActivities',
+                    type: 'GET',
+                    dataType: 'json',
+                    data: { "athleteId": athleteId.toString() },
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    //console.log("success");
+                    //console.log(textStatus);
+                    //console.log(data);
+
+                    currentActivities = data;
+
+                    sortActivitiesByDate(currentActivities);
+                    buildActivitiesTable(currentActivities);
+                    showActivitiesTable();
+
+                    // is this the appropriate point in the code to invoke pushState?
+                    console.log("pushState activities");
+                    var stateObj = { athleteId: athleteId, stravaState: "summaryActivities" };
+                    history.pushState(stateObj, null, "StravaStatsHome.html?athleteId=" + athleteId + "&stravaState=summaryActivities");
+
+                });
+
+            }
+
             // table column sort callback
             $("#SummaryActivities th").click(function () {
-                console.log(this);
+                //console.log(this);
                 sortByColumn($(this));
             });
 
             $("#SegmentEffortsSection th").click(function () {
-                console.log(this);
+                //console.log(this);
                 sortEffortsByColumn($(this));
             });
 
-            // random event handlers
             window.onpopstate = function (event) {
-                alert("location: " + document.location + ", state: " + JSON.stringify(event.state));
+                //var newState = JSON.stringify(event.state);
+
+                console.log("onpopstate, location: " + document.location + ", state: " + JSON.stringify(event.state));
+                console.log("document.URL: " + document.URL);
+
+                var newState = event.state.stravaState;
+
+                console.log("popstate " + newState);
+
+                console.log("navigate to state: " + newState);
+
+                if (newState == "summaryActivities") {
+                    firstTimeFoo = false;
+                    sortActivitiesByDate(currentActivities);
+                    buildActivitiesTable(currentActivities);
+                    showActivitiesTable();
+                }
             };
+
+            window.onload = function (event) {
+                //alert("onload, state: " + history.state);
+                console.log("window.onload invoked");
+            };
+
+// entry point, determine what to do by fetching athleteId / stravaState, etc.
+
+            //debugger
+
+            console.log("startup, history.state: ");
+            console.log(history.state);
+
+            if (history.state == null) {
+                console.log("retrieve athleteId from body");
+                athleteId = $('body').data('athleteid');
+                console.log("athleteId: " + athleteId);
+
+                if (athleteId == null || athleteId == undefined || athleteId == "" || athleteId.toString().substr(1) == "thleteIdPlaceholder") {
+
+                    console.log("athleteId from body invalid, retrieve from document.URL");
+                    athleteId = getParameterByName("athleteId", document.URL);
+                    console.log("athleteId from URL: " + athleteId);
+
+                    if (athleteId == null || athleteId == undefined || athleteId == "" || athleteId.toString().substr(1) == "thleteIdPlaceholder") {
+                        console.log("scenario: user navigated directly to site");
+                        console.log("athleteId completely unavailable, interpret as direct connect.");
+                        // scenario: user navigated directly to StravaStatsHome.html
+                        // redirect to Strava
+                        window.location.replace("https://www.strava.com/oauth/authorize?client_id=2055&response_type=code&redirect_uri=http://" + hostName + ":8080/StravaStatsHome.html");
+                    }
+                    else {
+                        console.log("scenario: user clicked on bookmark");
+                        // scenario: user clicked on bookmark
+                        // get initial state
+                        // for now, assume summary activities
+                        startup();
+                        return;
+                    }
+                }
+                else {
+                    console.log("scenario: user connected to Strava from separate page; security token retrieved");
+                    // athleteId is set
+                    // scenario: connected to Strava from separate page; security token retrieved
+                    // history.state == null && athleteId from body is good. means source was Strava
+                    // launch summary activities stream
+                    // return
+                    startup();
+                    return;
+                }
+            }
+            else {
+                console.log("history.state exists");
+                athleteId = history.state.athleteId;
+                console.log("athleteId from history.state: " + athleteId);
+                startup();
+                return;
+            }
+
+            // random event handlers
+            // how big is the performance hit of waiting for the onload event (especially on initial connection)?
+            //console.log("startup, history.state: ");
+            //console.log(history.state);
+            //console.log("location: ");
+            //console.log(document.location);
+
+            //// this currently works for the connect scenario and the refresh (from summary screen) scenario. others have not been implemented / considered.
+            //if (history.state == null) {
+            //    console.log("retrieve athleteId from body");
+            //    athleteId = $('body').data('athleteid');
+            //}
+            //else {
+            //    console.log("retrieve athleteId from history.state");
+            //    athleteId = history.state.athleteId;
+            //}
+            //console.log("type of athleteId is " + typeof athleteId);
+            //console.log("athleteId is ");
+            //console.log(athleteId);
+
+            //if (history.state == null || history.state.stravaState == "summaryActivities") {
+            //    startup();
+            //}
 
             $("#btnCompareSelectedRides").click(function () {
 

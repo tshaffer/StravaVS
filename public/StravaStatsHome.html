@@ -153,6 +153,7 @@
 
 // GLOBAL VARIABLES
             var firstTimeFoo = true;
+            var currentStravaState;
 
             var athleteId;
             var athleteName;
@@ -1210,6 +1211,8 @@
                 selectedActivity = event.data.activity;
                 getActivityEfforts(event.data.activityId, event.data.athleteId, event.data.activityName);
 
+                currentStravaState = "activityDetails";
+
                 var stateObj = { athleteId: athleteId, stravaState: "activityDetails", activityId: event.data.activityId };
                 console.log("pushState activityDetails, stateObj: ");
                 console.log(stateObj);
@@ -1366,6 +1369,8 @@
                 console.log("athleteName is ");
                 console.log(athleteName);
 
+                currentStravaState = "summaryActivities";
+
                 // get summary activities for the current athlete
                 $.ajax({
                     url: 'http://' + hostName + ':8080/athleteActivities',
@@ -1386,6 +1391,9 @@
                     showActivitiesTable();
 
                     // is this the appropriate point in the code to invoke pushState?
+                    //debugger
+                    //currentStravaState = "summaryActivities";
+
                     console.log("pushState activities");
                     var stateObj = { athleteId: athleteId, stravaState: "summaryActivities" };
                     history.pushState(stateObj, null, "StravaStatsHome.html?athleteId=" + athleteId + "&stravaState=summaryActivities");
@@ -1406,6 +1414,9 @@
             });
 
             window.onpopstate = function (event) {
+
+                //debugger
+
                 //var newState = JSON.stringify(event.state);
 
                 console.log("onpopstate, location: " + document.location + ", state: " + JSON.stringify(event.state));
@@ -1417,12 +1428,24 @@
 
                 console.log("navigate to state: " + newState);
 
+                // if the new state is the same as the existing state, don't do anything
+                if (currentStravaState == newState) {
+                    console.log("currentStravaState == newState == " + newState + ", ignore popstate event");
+                    return;
+                }
+
                 if (newState == "summaryActivities") {
                     firstTimeFoo = false;
                     sortActivitiesByDate(currentActivities);
                     buildActivitiesTable(currentActivities);
                     showActivitiesTable();
                 }
+                else if (newState == "activityDetails") {
+                    var activityId = event.state.activityId;
+                    console.log("activityId=" + activityId);
+                }
+
+                currentStravaState = newState;
             };
 
             window.onload = function (event) {

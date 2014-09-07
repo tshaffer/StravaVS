@@ -1375,7 +1375,7 @@
                 return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
             }
 
-            function startup() {
+            function startup(pushState) {
 
                 //console.log("document.URL: " + document.URL);
                 //console.log("window.location");
@@ -1431,10 +1431,11 @@
                     //debugger
                     //currentStravaState = "summaryActivities";
 
-                    console.log("pushState summaryActivities");
-                    var stateObj = { athleteId: athleteId, stravaState: "summaryActivities" };
-                    history.pushState(stateObj, null, "StravaStatsHome.html?athleteId=" + athleteId + "&stravaState=summaryActivities");
-
+                    if (pushState) {
+                        console.log("pushState summaryActivities");
+                        var stateObj = { athleteId: athleteId, stravaState: "summaryActivities", currentActivities: currentActivities };
+                        history.pushState(stateObj, null, "StravaStatsHome.html?athleteId=" + athleteId + "&stravaState=summaryActivities");
+                    }
                 });
 
             }
@@ -1458,7 +1459,6 @@
 
                 console.log("onpopstate, history.length: ", history.length);
 
-                console.log("onpopstate, URL: " + document.URL);
                 //console.log("state: " + JSON.stringify(event.state));
                 console.log("document.URL: " + document.URL);
 
@@ -1473,7 +1473,13 @@
                 }
 
                 if (newState == "summaryActivities") {
-                    firstTimeFoo = false;
+                    //debugger
+                    if (currentActivities == undefined) {
+                        currentActivities = event.state.currentActivities;
+                    }
+                    else {
+                        firstTimeFoo = false;
+                    }
                     sortActivitiesByDate(currentActivities);
                     buildActivitiesTable(currentActivities);
                     showActivitiesTable();
@@ -1524,7 +1530,7 @@
                         window.location.replace("https://www.strava.com/oauth/authorize?client_id=2055&response_type=code&redirect_uri=http://" + hostName + ":8080/StravaStatsHome.html");
                     }
                     else {
-                        console.log("scenario: user clicked on bookmark");
+                        console.log("scenario: user clicked on bookmark or perhaps used the browser's forward / back button");
                         // scenario: user clicked on bookmark
                         // get initial state
                         // for now, assume summary activities
@@ -1533,7 +1539,7 @@
                         console.log("targetState = " + targetState);
 
                         if (targetState == "summaryActivities") {
-                            startup();
+                            startup(false);
                         }
                         else if (targetState == "activityDetails") {
                             var activityId = getParameterByName("activityId", document.URL);
@@ -1550,11 +1556,14 @@
                     // history.state == null && athleteId from body is good. means source was Strava
                     // launch summary activities stream
                     // return
-                    startup();
+                    startup(true);
                     return;
                 }
             }
             else {
+                // scenario
+                //      refresh
+                //      in app, go to google, hit Back - history is still there? (sometimes it is)
                 //debugger
 
                 console.log("history.state exists");
@@ -1566,19 +1575,16 @@
                 console.log("targetState = " + targetState);
 
                 if (targetState == "summaryActivities") {
-                    startup();
+                    startup(false);
                 }
                 else if (targetState == "activityDetails") {
-                    // retrieve the following
-                    // history.state.activity
-                    // history.state.activityId, activityName, athleteId
                     athleteId = history.state.athleteId;
                     var activity = history.state.activity;
                     var activityId = history.state.activityId;
                     var activityName = history.state.activityName;
                     console.log("activityId=" + activityId);
                     showDetails(athleteId, activity, activityId, activityName);
-                    pushActivityDetails(athleteId, activity, activityId, activityName);
+                    //pushActivityDetails(athleteId, activity, activityId, activityName);
                 }
 
                 return;

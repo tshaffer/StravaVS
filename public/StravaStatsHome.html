@@ -236,7 +236,7 @@
                 // add button handler for this particular activity
                 if (firstTimeFoo) {
                     var btnId = "#" + activityId;
-                    $(btnId).click({ activityId: activityId, athleteId: athleteId, activityName: activityName, activity: activity }, showDetails);
+                    $(btnId).click({ activityId: activityId, athleteId: athleteId, activityName: activityName, activity: activity }, showDetailsEventHandler);
                 }
             }
 
@@ -1205,18 +1205,55 @@
                 }
             }
 
-            function showDetails(event) {
-                //console.log("button pressed: activityId = " + event.data.activityId + ", athleteId = " + event.data.athleteId);
+            function showDetailsEventHandler(event) {
 
-                selectedActivity = event.data.activity;
-                getActivityEfforts(event.data.activityId, event.data.athleteId, event.data.activityName);
+                showDetails(event.data.athleteId, event.data.activity, event.data.activityId, event.data.activityName);
 
-                currentStravaState = "activityDetails";
+                pushActivityDetails(event.data.athleteId, event.data.activity, event.data.activityId, event.data.activityName);
+            }
 
-                var stateObj = { athleteId: athleteId, stravaState: "activityDetails", activityId: event.data.activityId };
+            function showDetailsForActivity(activityId) {
+                //debugger
+
+                $.ajax({
+                    url: 'http://' + hostName + ':8080/detailedActivity',
+                    data: { "activityId": activityId, "athleteId": athleteId },
+
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    console.log("detailedActivity success");
+                    console.log(textStatus);
+                    console.log(data);
+
+                    var detailedActivity = data;
+
+                    //debugger
+
+                    showDetails(athleteId, detailedActivity, activityId, detailedActivity.activityName);
+                    //pushActivityDetails(athleteId, detailedActivity.activity, activityId, detailedActivity.activityName);
+
+                    //debugger
+                });
+
+            }
+
+            function pushActivityDetails(athleteId, activity, activityId, activityName) {
+
+                var stateObj = { athleteId: athleteId, stravaState: "activityDetails", activityId: activityId, activity: activity, activityName: activityName };
                 console.log("pushState activityDetails, stateObj: ");
                 console.log(stateObj);
-                history.pushState(stateObj, null, "StravaStatsHome.html?athleteId=" + athleteId + "&stravaState=activityDetails&activityId=" + event.data.activityId);
+                history.pushState(stateObj, null, "StravaStatsHome.html?athleteId=" + athleteId + "&stravaState=activityDetails&activityId=" + activityId);
+            }
+
+            function showDetails(athleteId, activity, activityId, activityName) {
+
+                selectedActivity = activity;
+                getActivityEfforts(activityId, athleteId, activityName);
+
+                currentStravaState = "activityDetails";
             }
 
             function sortAscending(a, b) {
@@ -1394,7 +1431,7 @@
                     //debugger
                     //currentStravaState = "summaryActivities";
 
-                    console.log("pushState activities");
+                    console.log("pushState summaryActivities");
                     var stateObj = { athleteId: athleteId, stravaState: "summaryActivities" };
                     history.pushState(stateObj, null, "StravaStatsHome.html?athleteId=" + athleteId + "&stravaState=summaryActivities");
 
@@ -1419,12 +1456,13 @@
 
                 //var newState = JSON.stringify(event.state);
 
-                console.log("onpopstate, location: " + document.location + ", state: " + JSON.stringify(event.state));
+                console.log("onpopstate, history.length: ", history.length);
+
+                console.log("onpopstate, URL: " + document.URL);
+                //console.log("state: " + JSON.stringify(event.state));
                 console.log("document.URL: " + document.URL);
 
                 var newState = event.state.stravaState;
-
-                console.log("popstate " + newState);
 
                 console.log("navigate to state: " + newState);
 
@@ -1441,8 +1479,13 @@
                     showActivitiesTable();
                 }
                 else if (newState == "activityDetails") {
+                    //debugger
+                    athleteId = event.state.athleteId;
+                    var activity = event.state.activity;
                     var activityId = event.state.activityId;
+                    var activityName = event.state.activityName;
                     console.log("activityId=" + activityId);
+                    showDetails(athleteId, activity, activityId, activityName);
                 }
 
                 currentStravaState = newState;
@@ -1459,12 +1502,14 @@
 
             console.log("startup, history.state: ");
             console.log(history.state);
+            console.log("startup history.length: ", history.length);
 
             if (history.state == null) {
                 console.log("retrieve athleteId from body");
                 athleteId = $('body').data('athleteid');
                 console.log("athleteId: " + athleteId);
 
+                // note the intended use of 'thleteIdPlaceholder'
                 if (athleteId == null || athleteId == undefined || athleteId == "" || athleteId.toString().substr(1) == "thleteIdPlaceholder") {
 
                     console.log("athleteId from body invalid, retrieve from document.URL");
@@ -1483,7 +1528,18 @@
                         // scenario: user clicked on bookmark
                         // get initial state
                         // for now, assume summary activities
-                        startup();
+                        //debugger
+                        var targetState = getParameterByName("stravaState", document.URL);
+                        console.log("targetState = " + targetState);
+
+                        if (targetState == "summaryActivities") {
+                            startup();
+                        }
+                        else if (targetState == "activityDetails") {
+                            var activityId = getParameterByName("activityId", document.URL);
+                            console.log("activityId: " + activityId);
+                            showDetailsForActivity(activityId);
+                        }
                         return;
                     }
                 }
@@ -1499,36 +1555,34 @@
                 }
             }
             else {
+                //debugger
+
                 console.log("history.state exists");
                 athleteId = history.state.athleteId;
                 console.log("athleteId from history.state: " + athleteId);
-                startup();
+
+                // get intended state
+                var targetState = history.state.stravaState;
+                console.log("targetState = " + targetState);
+
+                if (targetState == "summaryActivities") {
+                    startup();
+                }
+                else if (targetState == "activityDetails") {
+                    // retrieve the following
+                    // history.state.activity
+                    // history.state.activityId, activityName, athleteId
+                    athleteId = history.state.athleteId;
+                    var activity = history.state.activity;
+                    var activityId = history.state.activityId;
+                    var activityName = history.state.activityName;
+                    console.log("activityId=" + activityId);
+                    showDetails(athleteId, activity, activityId, activityName);
+                    pushActivityDetails(athleteId, activity, activityId, activityName);
+                }
+
                 return;
             }
-
-            // random event handlers
-            // how big is the performance hit of waiting for the onload event (especially on initial connection)?
-            //console.log("startup, history.state: ");
-            //console.log(history.state);
-            //console.log("location: ");
-            //console.log(document.location);
-
-            //// this currently works for the connect scenario and the refresh (from summary screen) scenario. others have not been implemented / considered.
-            //if (history.state == null) {
-            //    console.log("retrieve athleteId from body");
-            //    athleteId = $('body').data('athleteid');
-            //}
-            //else {
-            //    console.log("retrieve athleteId from history.state");
-            //    athleteId = history.state.athleteId;
-            //}
-            //console.log("type of athleteId is " + typeof athleteId);
-            //console.log("athleteId is ");
-            //console.log(athleteId);
-
-            //if (history.state == null || history.state.stravaState == "summaryActivities") {
-            //    startup();
-            //}
 
             $("#btnCompareSelectedRides").click(function () {
 

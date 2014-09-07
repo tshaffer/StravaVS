@@ -445,6 +445,30 @@ function fetchSegmentEffortFromStrava(responseData, segmentEffortId) {
 }
 
 // get detailed activity
+function getDetailedActivity(responseData) {
+
+    console.log('getDetailedActivity invoked');
+    console.log('activityId = ' + responseData.activityId);
+
+    // initial implementation - retrieve activity from db; not strava
+    var query = "SELECT * FROM detailedactivity WHERE activityId=?";
+
+    db.query(
+      query,
+      [responseData.activityId],
+      function (err, rows) {
+          if (err) throw err;
+          console.log("getDetailedActivity query returned");
+          console.log("return from query - rows length = " + rows.length);
+
+          if (rows.length == 1) {
+              sendDetailedActivityResponse(responseData.serverResponse, rows[0]);
+          }
+          // else??
+      }
+    );
+}
+
 // data to return to client includes my version of segmentEfforts that also includes a portion of segment data
 function getActivityEfforts(responseData) {
     console.log('getActivityEfforts invoked, id = ' + responseData.activityId);
@@ -959,8 +983,8 @@ function performTokenExchange(response, code) {
                             console.log("replace athleteIdPlaceholder with " + authenticationData.athleteId);
                             console.log("type of athleteId is " + typeof authenticationData.athleteId);
                             var dataAsStr = String(data);
-                            console.log("search/replace string:");
-                            console.log(dataAsStr);
+                            //console.log("search/replace string:");
+                            //console.log(dataAsStr);
                             var finalDataAsStr = dataAsStr.replace("athleteIdPlaceholder", authenticationData.athleteId.toString());
                             finalDataAsStr = finalDataAsStr.replace("athleteNamePlaceholder", authenticationData.athlete.firstname + " " + authenticationData.athlete.lastname);
                             sendFile(response, absPath, finalDataAsStr);
@@ -1032,6 +1056,14 @@ function sendActivitiesResponse(response, activitiesAsJson) {
     { "content-type": 'application/json' }
     );
     response.end(JSON.stringify(activitiesAsJson, null, 3));
+}
+
+function sendDetailedActivityResponse(response, activityAsJson) {
+    response.writeHead(
+    200,
+    { "content-type": 'application/json' }
+    );
+    response.end(JSON.stringify(activityAsJson, null, 3));
 }
 
 function sendDetailedEffortsResponse(responseData) {
@@ -1254,12 +1286,18 @@ var server = http.createServer(function (request, response) {
             filePath = 'public/StravaStatsHome.html';
         }
     }
-    else if (parsedUrl.pathname == '/athleteActivities') {          // web service call
+    else if (parsedUrl.pathname == '/athleteActivities') {
         responseData.athleteId = parsedUrl.query.athleteId;
         listAthleteActivities(responseData);
         return;
     }
-    else if (parsedUrl.pathname == '/activityEfforts') {       // web service call
+    else if (parsedUrl.pathname == "/detailedActivity") {
+        responseData.activityId = parsedUrl.query.activityId;
+        responseData.athleteId = parsedUrl.query.athleteId;
+        getAuthenticatedAthlete(responseData, getDetailedActivity);
+        return;
+    }
+    else if (parsedUrl.pathname == '/activityEfforts') {
         responseData.athleteId = parsedUrl.query.athleteId;
         responseData.activityId = parsedUrl.query.activityId;
         responseData.activityName = parsedUrl.query.activityName;

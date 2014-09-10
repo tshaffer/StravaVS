@@ -1,5 +1,5 @@
-//var dbHostName = '127.0.0.1';
-var dbHostName = 'stravadb.cohsjqy0hofx.us-west-1.rds.amazonaws.com';
+var dbHostName = '127.0.0.1';
+//var dbHostName = 'stravadb.cohsjqy0hofx.us-west-1.rds.amazonaws.com';
 
 var http = require('http');
 var https = require('https');

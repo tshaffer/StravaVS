@@ -293,6 +293,7 @@
                     //console.log(data);
 
                     // do something with this activity (push it?)
+                    //debugger
                     activitiesToCompare.push(data);
 
                     if (activityIds.length == 0) {
@@ -371,6 +372,7 @@
                 });
 
                 //console.log(columns);
+                $("#comparedActivitiesTable").empty();
 
                 // for each segment in masterSegments
                 // output rowLabel
@@ -446,6 +448,7 @@
 
                 // retrieve all of the selected activities first
                 var activityId = activityIds.shift();
+                activitiesToCompare = [];
                 retrieveActivity(activityIds, activityId);
                 return;
 
@@ -1451,6 +1454,38 @@
                 sortEffortsByColumn($(this));
             });
 
+            $("#btnCompareSelectedRides").click(function () {
+
+                var numRows = 0;
+                var selectedRows = 0;
+
+                var selectedActivityIds = [];
+
+                $('#activitiesTable tr').each(function (i, row) {
+
+                    var $row = $(row);
+                    var $checkedBoxes = $row.find('input:checked');
+
+                    if ($checkedBoxes.length == 1) {
+                        selectedRows++;
+
+                        var activityId = $row[0].id.substring(2);
+                        selectedActivityIds.push(activityId);
+                    }
+                    numRows++;
+                });
+
+                //debugger
+                var stateObj = { athleteId: athleteId, stravaState: "compareActivities", activityIds: selectedActivityIds };
+                console.log("pushState compareRides, stateObj: ");
+                console.log(stateObj);
+                history.pushState(stateObj, null, "StravaStatsHome.html?athleteId=" + athleteId + "&stravaState=compareActivities&activityIds=" + selectedActivityIds.toString());
+
+                currentStravaState = "compareActivities";
+
+                compareActivities(selectedActivityIds);
+            });
+
             window.onpopstate = function (event) {
 
                 //debugger
@@ -1473,7 +1508,6 @@
                 }
 
                 if (newState == "summaryActivities") {
-                    //debugger
                     if (currentActivities == undefined) {
                         currentActivities = event.state.currentActivities;
                     }
@@ -1485,13 +1519,18 @@
                     showActivitiesTable();
                 }
                 else if (newState == "activityDetails") {
-                    //debugger
                     athleteId = event.state.athleteId;
                     var activity = event.state.activity;
                     var activityId = event.state.activityId;
                     var activityName = event.state.activityName;
                     console.log("activityId=" + activityId);
                     showDetails(athleteId, activity, activityId, activityName);
+                }
+                else if (newState == "compareActivities") {
+                    athleteId = event.state.athleteId;
+                    var selectedActivityIds = event.state.activityIds;
+
+                    compareActivities(selectedActivityIds);
                 }
 
                 currentStravaState = newState;
@@ -1502,7 +1541,7 @@
                 console.log("window.onload invoked");
             };
 
-// entry point, determine what to do by fetching athleteId / stravaState, etc.
+// ENTRY POINT, determine what to do by fetching athleteId / stravaState, etc.
 
             //debugger
 
@@ -1586,33 +1625,16 @@
                     showDetails(athleteId, activity, activityId, activityName);
                     //pushActivityDetails(athleteId, activity, activityId, activityName);
                 }
+                else if (targetState == "compareActivities") {
+                    athleteId = history.state.athleteId;
+                    var selectedActivityIds = history.state.activityIds;
+
+                    compareActivities(selectedActivityIds);
+                }
 
                 return;
             }
 
-            $("#btnCompareSelectedRides").click(function () {
-
-                var numRows = 0;
-                var selectedRows = 0;
-
-                var selectedActivityIds = [];
-
-                $('#activitiesTable tr').each(function (i, row) {
-
-                    var $row = $(row);
-                    var $checkedBoxes = $row.find('input:checked');
-
-                    if ($checkedBoxes.length == 1) {
-                        selectedRows++;
-
-                        var activityId = $row[0].id.substring(2);
-                        selectedActivityIds.push(activityId);
-                    }
-                    numRows++;
-                });
-
-                compareActivities(selectedActivityIds);
-            });
         });
     </script>
 

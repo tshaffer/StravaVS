@@ -159,12 +159,7 @@ function allEfforts(responseData) {
 }
 
 // invoked after authentication when user requests details about an individual activity
-function getEfforts(responseData) {
-    console.log("getEfforts invoked");
-
-    responseData.segmentEffortStruct = {};
-    responseData.segmentStruct = {};
-
+function getIndividualEfforts(responseData) {
     // retrieve a list of segment effort ids for this specific activity (get segment id's as well)
     var query = "SELECT * FROM segmenteffortids " +
                 "WHERE activityId=?";
@@ -206,6 +201,33 @@ function getEfforts(responseData) {
           fetchSegmentsFromDB(responseData);
 
           fetchSegmentEffortsFromDB(responseData);
+      }
+    );
+}
+
+function getEfforts(responseData) {
+    console.log("getEfforts invoked");
+
+    responseData.segmentEffortStruct = {};
+    responseData.segmentStruct = {};
+
+    var nameQuery = "SELECT name FROM detailedactivity " +
+                    "WHERE activityId=?";
+    db.query(
+      nameQuery,
+      [responseData.activityId],
+      function (err, rows) {
+          if (err) throw err;
+          console.log("nameQuery returned");
+          console.log("return from query - rows length = " + rows.length);
+
+          if (rows.length > 0) {
+              console.log(rows[0]);
+              console.log("name: " + rows[0].name);
+              responseData.activityName = rows[0].name;
+          }
+
+          getIndividualEfforts(responseData);
       }
     );
 }
@@ -365,8 +387,8 @@ function fetchSegmentFromStrava(responseData, segmentId) {
             // segment  received - add to db, structure
             convertedSegment = addSegmentToDB(segment);
 
-            console.log("convertedSegment = ");
-            console.log(convertedSegment);
+            //console.log("convertedSegment = ");
+            //console.log(convertedSegment);
 
             // segment is the raw data from the server; need to convert it before adding it to the server
             responseData.segmentStruct[segmentId] = convertedSegment;
@@ -429,8 +451,8 @@ function fetchSegmentEffortFromStrava(responseData, segmentEffortId) {
 
             convertedSegmentEffort = addSegmentEffortToDB(segmentEffort);
 
-            console.log("convertedSegmentEffort = ");
-            console.log(convertedSegmentEffort);
+            //console.log("convertedSegmentEffort = ");
+            //console.log(convertedSegmentEffort);
 
             responseData.segmentEffortStruct[segmentEffortId].segmentEffort = convertedSegmentEffort;
 
@@ -669,8 +691,8 @@ function fetchDetailedActivityFromStrava(responseData, detailedActivityIdToFetch
             // convert string from server into JSON object
             var detailedActivityData = JSON.parse(str);
 
-            console.log("detailedActivity received from server for id " + detailedActivityIdToFetchFromServer);
-            console.log(detailedActivityData);
+            //console.log("detailedActivity received from server for id " + detailedActivityIdToFetchFromServer);
+            //console.log(detailedActivityData);
 
             fetchStreamFromStrava(responseData, detailedActivityData, detailedActivityIdToFetchFromServer, detailedActivityIdsToFetchFromServer, idsOfActivitiesFetchedFromStrava);
         });
@@ -1076,8 +1098,8 @@ function sendDetailedEffortsResponse(responseData) {
     for (var segmentEffortId in responseData.segmentEffortStruct) {
         if (responseData.segmentEffortStruct.hasOwnProperty(segmentEffortId)) {
             segmentEffortValue = responseData.segmentEffortStruct[segmentEffortId];
-            console.log("segmentEffortValue");
-            console.log(segmentEffortValue);
+            //console.log("segmentEffortValue");
+            //console.log(segmentEffortValue);
 
             // retrieve segment effort data
             segmentEffort = segmentEffortValue.segmentEffort;
@@ -1090,7 +1112,7 @@ function sendDetailedEffortsResponse(responseData) {
 
             detailedEffort = {};
 
-            console.log(segment);
+            //console.log(segment);
 
             // segment data
             detailedEffort.segmentId = segment.segmentId;
@@ -1112,7 +1134,7 @@ function sendDetailedEffortsResponse(responseData) {
         }
     }
 
-    console.log(detailedActivity);
+    //console.log(detailedActivity);
 
     responseData.serverResponse.writeHead(
     200,
@@ -1300,7 +1322,7 @@ var server = http.createServer(function (request, response) {
     else if (parsedUrl.pathname == '/activityEfforts') {
         responseData.athleteId = parsedUrl.query.athleteId;
         responseData.activityId = parsedUrl.query.activityId;
-        responseData.activityName = parsedUrl.query.activityName;
+        //responseData.activityName = parsedUrl.query.activityName;
         getActivityEfforts(responseData);
         return;
     }

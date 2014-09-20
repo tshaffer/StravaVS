@@ -181,18 +181,6 @@
             var ridePathDecoded;
             var elevations;
             var mapMarker;
-// RANDOM
-
-            function getActivityName(activityId) {
-                var activityName = "";
-                $.each(currentActivities, function (index, currentActivity) {
-                    if (activityId == currentActivity.activityId) {
-                        activityName = currentActivity.name;
-                        return false;
-                    }
-                });
-                return activityName;
-            }
 
 // ACTIVITIES
 
@@ -277,11 +265,9 @@
 
                 //console.log("retrieveActivity invoked, activityId: " + activityId);
 
-                var activityName = getActivityName(activityId);
-
                 $.ajax({
                     url: 'http://' + hostName + ':8080/activityEfforts',
-                    data: { "activityId": activityId, "athleteId": athleteId, "activityName": activityName },
+                    data: { "activityId": activityId, "athleteId": athleteId },
 
                     type: 'GET',
                     dataType: 'json',
@@ -293,7 +279,6 @@
                     //console.log(data);
 
                     // do something with this activity (push it?)
-                    //debugger
                     activitiesToCompare.push(data);
 
                     if (activityIds.length == 0) {
@@ -1584,6 +1569,12 @@
                             var activityId = getParameterByName("activityId", document.URL);
                             console.log("activityId: " + activityId);
                             showDetailsForActivity(activityId);
+                        }
+                        else if (targetState == "compareActivities") {
+                            var activityIdsParam = getParameterByName("activityIds", document.URL);
+                            var selectedActivityIds = activityIdsParam.split(',');
+                            compareActivities(selectedActivityIds);
+                            //debugger;
                         }
                         return;
                     }

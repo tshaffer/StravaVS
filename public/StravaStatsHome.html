@@ -153,6 +153,7 @@
 
 // GLOBAL VARIABLES
             var firstTimeFoo = true;
+            var firstTimeFoo2 = true;
             var currentStravaState;
 
             var athleteId;
@@ -760,6 +761,8 @@
 
             function displaySummarySegmentEfforts(segment, segmentName, hideName) {
 
+                $('#SegmentEffortsTable').empty();
+
                 effortsNameHidden = hideName;
 
                 //console.log('displaySummarySegmentEfforts invoked, segmentName=' + segmentName);
@@ -857,6 +860,13 @@
 
                 segmentEffortsByAthlete = [];
 
+                var stateObj = { athleteId: athleteId, athleteName: athleteName, stravaState: "myEfforts", "segment": event.data.segment };
+                console.log("pushState myEfforts, stateObj: ");
+                console.log(stateObj);
+                history.pushState(stateObj, null, "StravaStatsHome.html?athleteId=" + athleteId + "&athleteName=" + athleteName + "&stravaState=myEfforts&segmentId=" + event.data.segment.segmentId.toString());
+
+                currentStravaState = "myEfforts";
+
                 getSummarySegmentEfforts(event.data.segment, true);
             }
 
@@ -918,14 +928,15 @@
                 rowToAdd = "<tr><td>" + segmentEffortName + "</td><td>" + movingTime + "</td><td>" + distanceInMiles.toFixed(1) + " mi</td><td>" + speed.toFixed(1) + " mph</td><td>" + averageGrade + "%</td><td>" + elevationGain.toFixed(0) + " ft</td><td>" + "<input id='" + segmentId.toString() + "' type='submit' value='Show friends'/>" + '</td><td>' + "<input id='" + segmentId.toString() + "MyEfforts" + "' type='submit' value='My efforts'/>" + '</td></tr>';
                 $('#DetailedActivityTable').append(rowToAdd);
 
-                // add button handler to show friends' result for this segment
-                btnId = "#" + segmentId.toString();
-                $(btnId).click({ segment: detailedEffort }, showFriendsResults);
+                if (firstTimeFoo2) {
+                    // add button handler to show friends' result for this segment
+                    btnId = "#" + segmentId.toString();
+                    $(btnId).click({ segment: detailedEffort }, showFriendsResults);
 
-                // add button handler to show my results for this segment
-                btnId = "#" + segmentId.toString() + "MyEfforts";
-                $(btnId).click({ id: segmentId.toString(), name: segmentEffortName, segment: detailedEffort }, showMyEfforts);
-
+                    // add button handler to show my results for this segment
+                    btnId = "#" + segmentId.toString() + "MyEfforts";
+                    $(btnId).click({ id: segmentId.toString(), name: segmentEffortName, segment: detailedEffort }, showMyEfforts);
+                }
             }
 
             function buildSegmentSummary(segment) {
@@ -994,6 +1005,8 @@
                 $.each(detailedEfforts, function (index, detailedEffort) {
                     buildSegmentEffortsRow(detailedEffort);
                 });
+
+                firstTimeFoo2 = false;  // may not work in all cases
             }
 
             function showActivityDetails(event) {
@@ -1514,8 +1527,21 @@
                 else if (newState == "compareActivities") {
                     athleteId = event.state.athleteId;
                     var selectedActivityIds = event.state.activityIds;
-
                     compareActivities(selectedActivityIds);
+                }
+                else if (newState == "myEfforts") {
+                    console.log("state: " + JSON.stringify(event.state));
+
+                    athleteId = event.state.athleteId;
+                    athleteName = event.state.athleteName;
+                    var segment = event.state.segment;
+
+                    athletes = {};
+                    athletes[athleteId] = athleteName;
+
+                    segmentEffortsByAthlete = [];
+
+                    getSummarySegmentEfforts(segment, true);
                 }
 
                 currentStravaState = newState;
@@ -1591,7 +1617,7 @@
                 }
             }
             else {
-                // scenario
+                // scenarios
                 //      refresh
                 //      in app, go to google, hit Back - history is still there? (sometimes it is)
                 //debugger
@@ -1619,8 +1645,21 @@
                 else if (targetState == "compareActivities") {
                     athleteId = history.state.athleteId;
                     var selectedActivityIds = history.state.activityIds;
-
                     compareActivities(selectedActivityIds);
+                }
+                else if (targetState == "myEfforts") {
+                    console.log("history.state: " + JSON.stringify(history.state));
+
+                    athleteId = history.state.athleteId;
+                    athleteName = history.state.athleteName;
+                    var segment = history.state.segment;
+
+                    athletes = {};
+                    athletes[athleteId] = athleteName;
+
+                    segmentEffortsByAthlete = [];
+
+                    getSummarySegmentEfforts(segment, true);
                 }
 
                 return;

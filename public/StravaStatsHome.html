@@ -806,6 +806,33 @@
 
             }
 
+            function retrieveSegmentGetSummarySegmentEfforts(segmentId) {
+
+                $.ajax({
+                    url: 'http://' + hostName + ':8080/segment',
+                    data: { "segmentId": segmentId.toString(), "athleteId": athleteId },
+
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    //console.log("retrieveSegmentGetSummarySegmentEfforts success");
+                    //console.log(textStatus);
+                    //console.log(data);
+
+                    segment = data;
+
+                    athletes = {};
+                    athletes[athleteId] = athleteName;
+
+                    segmentEffortsByAthlete = [];
+
+                    getSummarySegmentEfforts(segment, true);
+
+                });
+            }
+
             function getSummarySegmentEfforts(segment, hideName) {
 
                 //console.log('getSummarySegmentEfforts invoked:' + segment.segmentId + ' ' + segment.segmentName);
@@ -826,7 +853,7 @@
                 //console.log(friendId);
                 //console.log(athleteName);
 
-                // get summary activities for the specified athlete
+                // get summary activities for the specified athlete for the specified segment
                 $.ajax({
                     url: 'http://' + hostName + ':8080/allEfforts',
                     data: { "segment_id": segment.segmentId.toString(), "athlete_id": athleteId, "friend_id": friendId.toString() },
@@ -1600,7 +1627,11 @@
                             var activityIdsParam = getParameterByName("activityIds", document.URL);
                             var selectedActivityIds = activityIdsParam.split(',');
                             compareActivities(selectedActivityIds);
-                            //debugger;
+                        }
+                        else if (targetState == "myEfforts") {
+                            athleteId = getParameterByName("athleteId", document.URL);
+                            var segmentId = getParameterByName("segmentId", document.URL);
+                            retrieveSegmentGetSummarySegmentEfforts(segmentId);
                         }
                         return;
                     }

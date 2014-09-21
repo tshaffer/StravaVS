@@ -292,6 +292,28 @@ function fetchSegmentEffortsFromDB(responseData) {
     );
 }
 
+function fetchSegmentFromDB(responseData) {
+    console.log("fetchSegmentFromDB invoked");
+
+    var query = "SELECT * FROM segment WHERE segmentId=?";
+
+    db.query(
+      query,
+      [responseData.segmentId],
+      function (err, rows) {
+          if (err) throw err;
+          console.log("fetchSegmentFromDB query returned");
+          console.log("return from query - rows length = " + rows.length);
+
+          if (rows.length == 1) {
+              responseData.rawSegmentData = rows[0];
+          }
+
+          sendSegmentResponse(responseData);
+      }
+    );
+}
+
 function fetchSegmentsFromDB(responseData) {
 
     console.log("fetchSegmentsFromDB invoked");
@@ -1088,6 +1110,25 @@ function sendDetailedActivityResponse(response, activityAsJson) {
     response.end(JSON.stringify(activityAsJson, null, 3));
 }
 
+function sendSegmentResponse(responseData) {
+    console.log("sendSegmentResponse invoked");
+
+    var segment = {};
+    segment.segmentId = responseData.rawSegmentData.segmentId;
+    segment.segmentName = responseData.rawSegmentData.name;
+    segment.segmentDistance = responseData.rawSegmentData.distance;
+    segment.averageGrade = responseData.rawSegmentData.averageGrade;
+    segment.maxGrade = responseData.rawSegmentData.maxGrade;
+    segment.totalElevationGain = responseData.rawSegmentData.totalElevationGain;
+
+    responseData.serverResponse.writeHead(
+    200,
+    { "content-type": 'application/json' }
+    );
+    responseData.serverResponse.end(JSON.stringify(segment, null, 3));
+
+}
+
 function sendDetailedEffortsResponse(responseData) {
     console.log("sendDetailedEffortsResponse invoked");
 
@@ -1324,6 +1365,12 @@ var server = http.createServer(function (request, response) {
         responseData.activityId = parsedUrl.query.activityId;
         //responseData.activityName = parsedUrl.query.activityName;
         getActivityEfforts(responseData);
+        return;
+    }
+    else if (parsedUrl.pathname == '/segment') {
+        responseData.athleteId = parsedUrl.query.athleteId;
+        responseData.segmentId = parsedUrl.query.segmentId;
+        getAuthenticatedAthlete(responseData, fetchSegmentFromDB);
         return;
     }
     else if (parsedUrl.pathname == '/allEfforts') {

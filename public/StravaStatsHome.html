@@ -922,6 +922,13 @@
                     // add authenticated athlete to the list
                     athletes[athleteId] = athleteName;
 
+                    var stateObj = { athleteId: athleteId, stravaState: "friendsResults", "athletes": JSON.stringify(athletes), "segment": event.data.segment };
+                    console.log("pushState friendsResults, stateObj: ");
+                    console.log(stateObj);
+                    history.pushState(stateObj, null, "StravaStatsHome.html?athleteId=" + athleteId + "&stravaState=friendsResults&segmentId=" + event.data.segment.segmentId.toString() + "&athletes=" + JSON.stringify(athletes));
+
+                    currentStravaState = "friendsResults";
+
                     segmentEffortsByAthlete = [];
 
                     getSummarySegmentEfforts(event.data.segment, false);
@@ -1570,6 +1577,21 @@
 
                     getSummarySegmentEfforts(segment, true);
                 }
+                else if (newState == "friendsResults") {
+                    console.log("state: " + JSON.stringify(event.state));
+
+                    athleteId = event.state.athleteId;
+                    var segment = event.state.segment;
+                    var friends = JSON.parse(event.state.athletes);
+                    console.log("friends:");
+                    console.log(friends);
+
+                    athletes = friends;
+
+                    segmentEffortsByAthlete = [];
+
+                    getSummarySegmentEfforts(segment, false);
+                }
 
                 currentStravaState = newState;
             };
@@ -1633,6 +1655,18 @@
                             var segmentId = getParameterByName("segmentId", document.URL);
                             retrieveSegmentGetSummarySegmentEfforts(segmentId);
                         }
+                        else if (targetState == "friendsResults") {
+                            console.log("state: " + JSON.stringify(event.state));
+
+                            athleteId = getParameterByName("athleteId", document.URL);
+                            var segmentId = getParameterByName("segmentId", document.URL);
+                            var athletes = getParameterByName("athletes", document.URL);
+                            var friends = JSON.parse(athletes);
+
+                            console.log("friends:");
+                            console.log(friends);
+                        }
+
                         return;
                     }
                 }
@@ -1691,6 +1725,21 @@
                     segmentEffortsByAthlete = [];
 
                     getSummarySegmentEfforts(segment, true);
+                }
+                else if (targetState == "friendsResults") {
+                    console.log("history.state: " + JSON.stringify(history.state));
+
+                    athleteId = history.state.athleteId;
+                    var segment = history.state.segment;
+                    var friends = JSON.parse(history.state.athletes);
+                    console.log("friends:");
+                    console.log(friends);
+
+                    athletes = friends;
+
+                    segmentEffortsByAthlete = [];
+
+                    getSummarySegmentEfforts(segment, false);
                 }
 
                 return;

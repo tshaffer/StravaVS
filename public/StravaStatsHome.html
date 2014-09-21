@@ -806,6 +806,31 @@
 
             }
 
+            function retrieveSegmentGetSummarySegmentEffortsFriends(segmentId, friends) {
+
+                $.ajax({
+                    url: 'http://' + hostName + ':8080/segment',
+                    data: { "segmentId": segmentId.toString(), "athleteId": athleteId },
+
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    //console.log("retrieveSegmentGetSummarySegmentEfforts success");
+                    //console.log(textStatus);
+                    //console.log(data);
+
+                    segment = data;
+
+                    athletes = friends;
+
+                    segmentEffortsByAthlete = [];
+
+                    getSummarySegmentEfforts(segment, false);
+                });
+            }
+                
             function retrieveSegmentGetSummarySegmentEfforts(segmentId) {
 
                 $.ajax({
@@ -1665,6 +1690,8 @@
 
                             console.log("friends:");
                             console.log(friends);
+
+                            retrieveSegmentGetSummarySegmentEffortsFriends(segmentId, friends);
                         }
 
                         return;

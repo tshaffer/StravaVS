@@ -1035,6 +1035,9 @@
             function buildSegmentEffortsTable(detailedEfforts) {
                 //$('#activityName').html("Ride name is " + activity.name);
 
+                // clear previous contents of table (if any)
+                $('#DetailedActivityTable').empty();
+
                 $.each(detailedEfforts, function (index, detailedEffort) {
                     buildSegmentEffortsRow(detailedEffort);
                 });

@@ -806,7 +806,7 @@
 
             }
 
-            function retrieveSegmentGetSummarySegmentEffortsFriends(segmentId, friends) {
+            function retrieveSegmentGetSummarySegmentEfforts(segmentId, athletesToShow, hideName) {
 
                 $.ajax({
                     url: 'http://' + hostName + ':8080/segment',
@@ -823,41 +823,14 @@
 
                     segment = data;
 
-                    athletes = friends;
+                    athletes = athletesToShow;
 
                     segmentEffortsByAthlete = [];
 
-                    getSummarySegmentEfforts(segment, false);
+                    getSummarySegmentEfforts(segment, hideName);
                 });
             }
                 
-            function retrieveSegmentGetSummarySegmentEfforts(segmentId) {
-
-                $.ajax({
-                    url: 'http://' + hostName + ':8080/segment',
-                    data: { "segmentId": segmentId.toString(), "athleteId": athleteId },
-
-                    type: 'GET',
-                    dataType: 'json',
-                    error: function () { alert('Failed!'); },
-                })
-                .success(function (data, textStatus, jqXHR) {
-                    //console.log("retrieveSegmentGetSummarySegmentEfforts success");
-                    //console.log(textStatus);
-                    //console.log(data);
-
-                    segment = data;
-
-                    athletes = {};
-                    athletes[athleteId] = athleteName;
-
-                    segmentEffortsByAthlete = [];
-
-                    getSummarySegmentEfforts(segment, true);
-
-                });
-            }
-
             function getSummarySegmentEfforts(segment, hideName) {
 
                 //console.log('getSummarySegmentEfforts invoked:' + segment.segmentId + ' ' + segment.segmentName);
@@ -1003,7 +976,8 @@
                 //console.log("buildSegmentSummary invoked");
 
                 // segment name
-                var segmentName = segment.segmentEffortName;
+                //var segmentName = segment.segmentEffortName;
+                var segmentName = segment.segmentName;
 
                 // segment distance
                 var segmentDistance = segment.segmentDistance;
@@ -1678,20 +1652,20 @@
                         else if (targetState == "myEfforts") {
                             athleteId = getParameterByName("athleteId", document.URL);
                             var segmentId = getParameterByName("segmentId", document.URL);
-                            retrieveSegmentGetSummarySegmentEfforts(segmentId);
+
+                            athletes = {};
+                            athletes[athleteId] = athleteName;
+
+                            retrieveSegmentGetSummarySegmentEfforts(segmentId, athletes, true);
                         }
                         else if (targetState == "friendsResults") {
                             console.log("state: " + JSON.stringify(event.state));
-
                             athleteId = getParameterByName("athleteId", document.URL);
                             var segmentId = getParameterByName("segmentId", document.URL);
                             var athletes = getParameterByName("athletes", document.URL);
                             var friends = JSON.parse(athletes);
 
-                            console.log("friends:");
-                            console.log(friends);
-
-                            retrieveSegmentGetSummarySegmentEffortsFriends(segmentId, friends);
+                            retrieveSegmentGetSummarySegmentEfforts(segmentId, friends, false);
                         }
 
                         return;
@@ -1806,7 +1780,7 @@
           </table>
         </div>
 
-        <div id="SummaryActivities">
+        <div id="SummaryActivities" class="hidden">
             <button type="button" id="btnCompareSelectedRides">Compare selected rides</button>
             <table id="activitiesTable">
                 <tr>

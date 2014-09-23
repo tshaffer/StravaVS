@@ -152,8 +152,6 @@
         $(document).ready(function () {
 
 // GLOBAL VARIABLES
-            var firstTimeFoo = true;
-            var firstTimeFoo2 = true;
             var currentStravaState;
 
             var athleteId;
@@ -223,13 +221,13 @@
                 $('#activitiesTable').append(rowToAdd);
 
                 // add button handler for this particular activity
-                if (firstTimeFoo) {
-                    var btnId = "#" + activityId;
-                    $(btnId).click({ activityId: activityId, athleteId: athleteId, activityName: activityName, activity: activity }, showDetailsEventHandler);
-                }
+                var btnId = "#" + activityId;
+                $(btnId).click({ activityId: activityId, athleteId: athleteId, activityName: activityName, activity: activity }, showDetailsEventHandler);
             }
 
             function buildActivitiesTable(activities) {
+
+                $("#activitiesTable input").unbind("click");
 
                 $.each(activities, function (index, activityElement) {
                     buildActivityRow(activityElement);
@@ -960,15 +958,13 @@
                 rowToAdd = "<tr><td>" + segmentEffortName + "</td><td>" + movingTime + "</td><td>" + distanceInMiles.toFixed(1) + " mi</td><td>" + speed.toFixed(1) + " mph</td><td>" + averageGrade + "%</td><td>" + elevationGain.toFixed(0) + " ft</td><td>" + "<input id='" + segmentId.toString() + "' type='submit' value='Show friends'/>" + '</td><td>' + "<input id='" + segmentId.toString() + "MyEfforts" + "' type='submit' value='My efforts'/>" + '</td></tr>';
                 $('#DetailedActivityTable').append(rowToAdd);
 
-                if (firstTimeFoo2) {
-                    // add button handler to show friends' result for this segment
-                    btnId = "#" + segmentId.toString();
-                    $(btnId).click({ segment: detailedEffort }, showFriendsResults);
+                // add button handler to show friends' result for this segment
+                btnId = "#" + segmentId.toString();
+                $(btnId).click({ segment: detailedEffort }, showFriendsResults);
 
-                    // add button handler to show my results for this segment
-                    btnId = "#" + segmentId.toString() + "MyEfforts";
-                    $(btnId).click({ id: segmentId.toString(), name: segmentEffortName, segment: detailedEffort }, showMyEfforts);
-                }
+                // add button handler to show my results for this segment
+                btnId = "#" + segmentId.toString() + "MyEfforts";
+                $(btnId).click({ id: segmentId.toString(), name: segmentEffortName, segment: detailedEffort }, showMyEfforts);
             }
 
             function buildSegmentSummary(segment) {
@@ -1035,14 +1031,15 @@
             function buildSegmentEffortsTable(detailedEfforts) {
                 //$('#activityName').html("Ride name is " + activity.name);
 
+                // clear old event handlers
+                $("#DetailedActivityTable input").unbind("click");
+
                 // clear previous contents of table (if any)
                 $('#DetailedActivityTable').empty();
 
                 $.each(detailedEfforts, function (index, detailedEffort) {
                     buildSegmentEffortsRow(detailedEffort);
                 });
-
-                firstTimeFoo2 = false;  // may not work in all cases
             }
 
             function showActivityDetails(event) {
@@ -1544,9 +1541,6 @@
                 if (newState == "summaryActivities") {
                     if (currentActivities == undefined) {
                         currentActivities = event.state.currentActivities;
-                    }
-                    else {
-                        firstTimeFoo = false;
                     }
                     sortActivitiesByDate(currentActivities);
                     buildActivitiesTable(currentActivities);

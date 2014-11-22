@@ -777,6 +777,10 @@
                     });
                 });
 
+                segmentEffortsData.sort(function (a, b) {
+                    return a.moving_time - b.moving_time;
+                });
+
                 // display data built just above (build data for possible sorting later)
                 $.each(segmentEffortsData, function (index, segmentEffortData) {
                     displayFriendSegmentEffort(segmentEffortData);

@@ -181,6 +181,7 @@
             var elevations;
             var mapMarker;
 
+            var segmentEffortOccurrenceCount = {}
 // ACTIVITIES
 
             function buildActivityRow(activity) {
@@ -938,6 +939,15 @@
             function buildSegmentEffortsRow(detailedEffort) {
 
                 var segmentId = detailedEffort.segmentId;
+
+                if (segmentId in segmentEffortOccurrenceCount) {
+                    segmentEffortOccurrenceCount[segmentId] = segmentEffortOccurrenceCount[segmentId] + 1;
+                }
+                else {
+                    segmentEffortOccurrenceCount[segmentId] = 0;
+                }
+                var uniqueSegmentId = segmentId + segmentEffortOccurrenceCount[segmentId].toString();
+
                 var segmentEffortId = detailedEffort.segmentEffortId;
 
                 // name
@@ -959,16 +969,16 @@
                 // elevation gain
                 var elevationGain = detailedEffort.totalElevationGain;
 
-                rowToAdd = "<tr><td>" + segmentEffortName + "</td><td>" + movingTime + "</td><td>" + distanceInMiles.toFixed(1) + " mi</td><td>" + speed.toFixed(1) + " mph</td><td>" + averageGrade + "%</td><td>" + elevationGain.toFixed(0) + " ft</td><td>" + "<input id='" + segmentId.toString() + "' type='submit' value='Show friends'/>" + '</td><td>' + "<input id='" + segmentId.toString() + "MyEfforts" + "' type='submit' value='My efforts'/>" + '</td></tr>';
+                rowToAdd = "<tr><td>" + segmentEffortName + "</td><td>" + movingTime + "</td><td>" + distanceInMiles.toFixed(1) + " mi</td><td>" + speed.toFixed(1) + " mph</td><td>" + averageGrade + "%</td><td>" + elevationGain.toFixed(0) + " ft</td><td>" + "<input id='" + uniqueSegmentId + "' type='submit' value='Show friends'/>" + '</td><td>' + "<input id='" + uniqueSegmentId + "MyEfforts" + "' type='submit' value='My efforts'/>" + '</td></tr>';
                 $('#DetailedActivityTable').append(rowToAdd);
 
                 // add button handler to show friends' result for this segment
-                btnId = "#" + segmentId.toString();
+                btnId = "#" + uniqueSegmentId;
                 $(btnId).click({ segment: detailedEffort }, showFriendsResults);
 
                 // add button handler to show my results for this segment
-                btnId = "#" + segmentId.toString() + "MyEfforts";
-                $(btnId).click({ id: segmentId.toString(), name: segmentEffortName, segment: detailedEffort }, showMyEfforts);
+                btnId = "#" + uniqueSegmentId + "MyEfforts";
+                $(btnId).click({ id: segmentId, name: segmentEffortName, segment: detailedEffort }, showMyEfforts);
             }
 
             function buildSegmentSummary(segment) {
@@ -1040,6 +1050,8 @@
 
                 // clear previous contents of table (if any)
                 $('#DetailedActivityTable').empty();
+
+                segmentEffortOccurrenceCount = {}
 
                 $.each(detailedEfforts, function (index, detailedEffort) {
                     buildSegmentEffortsRow(detailedEffort);

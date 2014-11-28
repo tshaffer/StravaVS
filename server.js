@@ -1012,32 +1012,7 @@ function performTokenExchange(response, code) {
               }
             );
 
-
-            filePath = "public" + "/StravaStatsHome.html";
-            var absPath = './' + filePath;
-
-            fs.exists(absPath, function (exists) {
-                if (exists) {
-                    fs.readFile(absPath, function (err, data) {
-                        if (err) {
-                            send404(response);
-                        } else {
-                            // replace placeholder for athlete id with the real value
-                            console.log("search for data-athlete");
-                            console.log("replace athleteIdPlaceholder with " + authenticationData.athleteId);
-                            console.log("type of athleteId is " + typeof authenticationData.athleteId);
-                            var dataAsStr = String(data);
-                            //console.log("search/replace string:");
-                            //console.log(dataAsStr);
-                            var finalDataAsStr = dataAsStr.replace("athleteIdPlaceholder", authenticationData.athleteId.toString());
-                            finalDataAsStr = finalDataAsStr.replace("athleteNamePlaceholder", authenticationData.athlete.firstname + " " + authenticationData.athlete.lastname);
-                            sendFile(response, absPath, finalDataAsStr);
-                        }
-                    });
-                } else {
-                    send404(response);
-                }
-            });
+            insertAthleteInfo(response, authenticationData);
 
         });
     });
@@ -1049,6 +1024,38 @@ function performTokenExchange(response, code) {
     // write data to request body
     req.write(postDataStr);
     req.end();
+}
+
+function insertAthleteInfo(response, authenticationData) {
+
+    filePath = "public" + "/StravaStatsHome.html";
+    var absPath = './' + filePath;
+
+    fs.exists(absPath, function (exists) {
+        if (exists) {
+            fs.readFile(absPath, function (err, data) {
+                if (err) {
+                    send404(response);
+                } else {
+                    // replace placeholder for athlete id with the real value
+                    console.log("search for data-athlete");
+                    console.log("replace athleteIdPlaceholder with " + authenticationData.athleteId);
+                    console.log("type of athleteId is " + typeof authenticationData.athleteId);
+                    var dataAsStr = String(data);
+                    //console.log("search/replace string:");
+                    //console.log(dataAsStr);
+                    var finalDataAsStr = dataAsStr.replace("athleteIdPlaceholder", authenticationData.athleteId.toString());
+                    finalDataAsStr = finalDataAsStr.replace("athleteNamePlaceholder", authenticationData.athlete.firstname + " " + authenticationData.athlete.lastname);
+                    console.log(finalDataAsStr);
+                    console.log("replaced athleteId = " + authenticationData.athleteId.toString());
+                    sendFile(response, absPath, finalDataAsStr);
+                }
+            });
+        } else {
+            send404(response);
+        }
+    });
+
 }
 
 function send404(response) {
@@ -1389,25 +1396,6 @@ var server = http.createServer(function (request, response) {
     else if (parsedUrl.pathname == '/bestTimes') {
         console.log("bestTimes, segmentIds are: ");
         console.log(parsedUrl.query["segmentIds[]"]);
-
-
-
-
-        //console.log("type of parsedUrl.query: " + typeof parsedUrl.query);
-
-        //for (var key in parsedUrl.query) {
-        //    // do something with key
-        //    console.log("type of key: " + typeof key);
-        //    console.log(key);
-        //    console.log("type of value: " + typeof parsedUrl.query[key]);
-        //    console.log("length of value: " + parsedUrl.query[key].length);
-        //    console.log(parsedUrl.query[key]);
-        //}
-
-        //console.log("segmentIds:");
-
-        //console.log("type of segmentIds is: " + typeof parsedUrl.query.segmentIds);
-        //console.log(parsedUrl.query.segmentIds);
         getBestTimes(responseData, parsedUrl.query["segmentIds[]"]);
         return;
     }

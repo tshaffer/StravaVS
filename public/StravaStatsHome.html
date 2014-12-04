@@ -17,6 +17,14 @@
             display: none;
         }
 
+        #mapBuilder-canvas {
+            position: absolute;
+            top: 0px;
+            width: 1800px;
+            height: 800px;
+            display: none;
+        }
+
         #elevationChart {
             position: absolute;
             top: 500px;
@@ -218,12 +226,15 @@
                 var calories = activity.calories;
 
                 //rowToAdd = '<tr><td>' + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + calories + '</td><td>' + "<input id='" + activityId + "' type='submit' value='Show details'/>" + '</td></tr>';
-                var rowToAdd = "<tr id='tr" + activityId + "'><td><input type='checkbox'/></td><td>" + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + calories + '</td><td>' + "<input id='" + activityId + "' type='submit' value='Show details'/>" + '</td></tr>';
+                var rowToAdd = "<tr id='tr" + activityId + "'><td><input type='checkbox'/></td><td>" + date + '</td><td>' + activity.name + '</td><td>' + movingTime + '</td><td>' + miles.toFixed(0) + ' miles</td><td>' + elevationGain + ' ft</td><td>' + mph.toFixed(1) + ' mph</td><td>' + calories + '</td><td>' + "<input id='" + activityId + "' type='submit' value='Show details'/>" + '</td><td>' + "<input id='" + activityId + "-mapBuilder' type='submit' value='Map builder'/>" + '</td></tr>';
                 $('#activitiesTable').append(rowToAdd);
 
-                // add button handler for this particular activity
+                // add button handlers for this particular activity
                 var btnId = "#" + activityId;
                 $(btnId).click({ activityId: activityId, athleteId: athleteId, activityName: activityName, activity: activity }, showDetailsEventHandler);
+
+                btnId = "#" + activityId + "-mapBuilder";
+                $(btnId).click({ activityId: activityId, athleteId: athleteId, activityName: activityName, activity: activity }, mapBuilderInvokedEventHandler);
             }
 
             function buildActivitiesTable(activities) {
@@ -493,7 +504,7 @@
                 return decodedLevels;
             }
 
-            function initializeMap(activity) {
+            function initializeMap(activity, mapId) {
                 //console.log("initializeMap: activity is");
                 //console.log(activity);
 
@@ -513,7 +524,7 @@
                 }
 
                 if (createNewMap) {
-                    activityMap = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
+                    activityMap = new google.maps.Map(document.getElementById(mapId), myOptions);
                 }
                 else {
                     activityMap.setZoom(14);
@@ -1058,12 +1069,17 @@
                 });
             }
 
-            function showActivityDetails(event) {
+            function showActivityDetails() {
                 $('#SummaryActivities').hide();
                 $('#RideSummary').show();
                 $('#DetailedActivity').show();
                 $('#elevationChart').show();
                 $('#map-canvas').show();
+            }
+
+            function showMapBuilder() {
+                $('#SummaryActivities').hide();
+                $('#mapBuilder-canvas').show();
             }
 
             function getActivityEfforts(activityId, athleteId, activityName) {
@@ -1086,7 +1102,7 @@
                     selectedDetailedEfforts = data.detailedEfforts;
                     buildSegmentEffortsTable(data.detailedEfforts);
 
-                    initializeMap(selectedActivity);
+                    initializeMap(selectedActivity, "map-canvas");
 
                     //buildElevationGraphFromGoogleData(selectedActivity);
                     buildElevationGraph(selectedActivity);
@@ -1204,11 +1220,15 @@
 
                 startMarker = new google.maps.Circle(startMarkerOptions);
 
+                // add listener for when user clicks on activity start point
+                google.maps.event.addListener(startMarker, 'click', segmentBuilderEvent);
+
                 // Add our over/out handlers.
                 google.visualization.events.addListener(chart, 'onmouseover', chartMouseOver);
                 google.visualization.events.addListener(chart, 'onmouseout', chartMouseOut);
 
                 function chartMouseOver(e) {
+                    console.log("chartMouseOver");
                     chart.setSelection([e]);
 
                     var item = chart.getSelection();
@@ -1613,6 +1633,264 @@
                 console.log("window.onload invoked");
             };
 
+// MAP BUILDER
+            var buildingTrailSegment = false;
+
+            var trailIntersections = [];
+            var segmentStartTrailIntersection = null;
+            var segmentStartIndex = -1;
+
+            function mapBuilderInvokedEventHandler(event) {
+
+                selectedActivity = event.data.activity;
+
+                currentStravaState = "mapBuilder";
+
+                var stateObj = { athleteId: event.data.athleteId, stravaState: "activityDetails", activityId: event.data.activityId, activity: selectedActivity, activityName: event.data.activityName };
+                console.log("pushState mapBuilder, stateObj: ");
+                console.log(stateObj);
+                history.pushState(stateObj, null, "StravaStatsHome.html?athleteId=" + event.data.athleteId + "&stravaState=mapBuilder&activityId=" + event.data.activityId);
+
+                initializeMap(selectedActivity, "mapBuilder-canvas");
+
+                showMapBuilder();
+
+                google.maps.event.addListener(activityMap, 'click', failedSegmentBuilderEvent);
+                google.maps.event.addListener(activityPath, 'click', segmentBuilderEvent);
+            }
+
+            // segmentBuilderEvent is invoked when user clicks on the path (however, not on a previously created trail intersection)
+            function segmentBuilderEvent(event) {
+
+                // event.latLng
+                console.log("lat=" + event.latLng.lat() + ",longitude=" + event.latLng.lng());
+
+                // get the point along the path that is closest to where the user clicked
+                var pointOnPath = getClosestPoint(event.latLng.lat(), event.latLng.lng());
+                console.log("locationInfo=");
+                console.log(pointOnPath);
+
+                // get distance from start of activity and index
+                var addTrailSegment = confirm("Do you want to create a new trail intersection " + pointOnPath.distanceFromStart.toFixed(2) + " miles from the start of the ride (at point " + pointOnPath.index.toString() + " of " + pointOnPath.numberOfPoints.toString() + ")?");
+                if (addTrailSegment == true) {
+                    var trailIntersectionName = prompt("Enter trail intersection name");
+                    if (trailIntersectionName != null && trailIntersectionName != "") {
+
+                        // put a marker down at the TrailIntersection point
+                        var trailIntersectionMarkerOptions = {
+                            strokeColor: '#FFFFFF',
+                            strokeOpacity: 1,
+                            strokeWeight: 2,
+                            fillColor: '#000000',
+                            fillOpacity: 1,
+                            map: activityMap,
+                            center: pointOnPath.latLng,
+                            radius: 25,
+                            editable: false,
+                            draggable: false
+                        };
+
+                        trailIntersectionMarker = new google.maps.Circle(trailIntersectionMarkerOptions);
+
+                        // add a TrailIntersection object at the point on the activity closest to the selected point
+                        var trailIntersection = new TrailIntersection(trailIntersectionName, pointOnPath.latLng, pointOnPath.elevation, pointOnPath.index, pointOnPath);
+                        trailIntersections.push(trailIntersection);
+                        google.maps.event.addListener(trailIntersectionMarker, 'click', trailIntersectionSelectedEventHandler);
+
+                        if (buildingTrailSegment) {
+
+                            // end of trail; add trail to segmentStartTrailIntersection.trailList
+                            addTrail(trailIntersection, pointOnPath);
+
+                            debugger;
+                        }
+                        else {
+                            segmentStartTrailIntersection = trailIntersection;
+                        }
+                        buildingTrailSegment = !buildingTrailSegment;
+
+                        console.log("segmentBuilderEvent, buildingTrailSegment = " + buildingTrailSegment.toString());
+                    }
+                }
+            }
+
+            function trailIntersectionSelectedEventHandler(event) {
+
+                // user clicked on a trail intersection - find out which one
+                var selectedTrailIntersection = null;
+                var selectedLat = this.center.lat();
+                var selectedLng = this.center.lng();
+
+                $.each(trailIntersections, function (index, trailIntersection) {
+                    var originLat = trailIntersection.origin.lat();
+                    var originLng = trailIntersection.origin.lng();
+                    if (selectedLat == originLat && selectedLng == originLng) {
+                        selectedTrailIntersection = trailIntersection;
+                        return;
+                    }
+                });
+
+                if (selectedTrailIntersection != null) {
+                    console.log("clicked on " + selectedTrailIntersection.name);
+
+                    var useTrailIntersection = confirm("Do you want to use the existing trail intersection " + selectedTrailIntersection.name + "?");
+                    if (useTrailIntersection == true) {
+                        if (buildingTrailSegment) {
+                            // add a trail segment from the origin to this trail intersection
+                            // origin is
+                            //      segmentStartTrailIntersection
+                            // destination is
+                            //      location associated with selectedTrailIntersection
+                            addTrail(selectedTrailIntersection, segmentStartTrailIntersection.pointOnPath);
+                            debugger;
+                        }
+                        else {
+                            segmentStartTrailIntersection = selectedTrailIntersection;
+                        }
+                        buildingTrailSegment = !buildingTrailSegment;
+                    }
+                }
+                else {
+                    console.log("Error - trail intersection not found");
+                }
+            }
+
+            // add a trail from 'pointOnPath' to 'trailIntersection'
+            function addTrail(trailIntersection, pointOnPath) {
+
+                var trailLength = 0;
+                var path = [];
+                var elevationGain = 0;
+                var elevationGainReverseDirection = 0;
+
+                // for now, assume that originIndex < destinationIndex
+                var trailPointIndex = segmentStartTrailIntersection.index + 1;
+                while (trailPointIndex <= trailIntersection.index) {
+
+                    trailLength += (pointOnPath.distances[trailPointIndex] - pointOnPath.distances[trailPointIndex - 1]);
+                    path.push(pointOnPath.locations[trailPointIndex]);
+
+                    if (pointOnPath.elevations[trailPointIndex] > pointOnPath.elevations[trailPointIndex - 1]) {
+                        elevationGain += pointOnPath.elevations[trailPointIndex] - pointOnPath.elevations[trailPointIndex - 1];
+                    }
+
+                    if (pointOnPath.elevations[trailPointIndex] < pointOnPath.elevations[trailPointIndex - 1]) {
+                        elevationGainReverseDirection += pointOnPath.elevations[trailPointIndex - 1] - pointOnPath.elevations[trailPointIndex];
+                    }
+
+                    trailPointIndex++;
+                }
+
+                trail = new Trail(trailLength, path, elevationGain, elevationGainReverseDirection, trailIntersection);
+
+                segmentStartTrailIntersection.trailList.push(trail);
+            }
+
+            function Trail(length, path, elevationGain, elevationGainReverseDirection, trailIntersection) {
+                this.length = length;
+                this.path = path;
+                this.elevationGain = elevationGain;
+                this.elevationGainReverseDirection = elevationGainReverseDirection;
+                this.endTrailIntersection = trailIntersection;
+            }
+
+            function TrailIntersection(name, origin, elevation, index, pointOnPath) {
+                this.name = name;
+                this.origin = origin;
+                this.elevation = elevation;
+                this.index = index;
+                this.pointOnPath = pointOnPath;
+                this.trailList = [];
+            }
+
+
+            function failedSegmentBuilderEvent(event) {
+                console.log("missed");
+                segmentBuilderEvent(event);
+            }
+
+            function getClosestPoint(lat, lng) {
+
+                var stream = JSON.parse(selectedActivity.stream);
+
+                var distances;
+                var locations;
+                var elevations;
+
+                // at this point, stream is an array that includes a number of streams; need to pick out the required stream data
+                for (i = 0; i < stream.length; i++) {
+                    switch (stream[i].type) {
+                        case 'distance':
+                            distances = stream[i].data;
+                            break;
+                        case 'latlng':
+                            locations = stream[i].data;
+                            break;
+                        case 'altitude':
+                            elevations = stream[i].data;
+                            break;
+                    }
+                }
+
+                if (locations == undefined || elevations == undefined) {
+                    console.log("stream undefined");
+                    return -1;
+                }
+
+                var locationInfo = {};
+                var minDistance = 9999;
+                var minIndex = -1;
+
+                for (i = 0; i < locations.length; i++) {
+
+                    var location = locations[i];
+
+                    var pointsDistance = getDistance(location[0], location[1], lat, lng);
+                    if (Math.min(minDistance, pointsDistance) != minDistance) {
+                        minIndex = i;
+                        minDistance = pointsDistance;
+                    }
+                }
+
+                console.log("segmentBuilderEvent: minIndex=" + minIndex.toString() + ", minDistance=" + minDistance.toString());
+
+                locationInfo.index = minIndex;
+                locationInfo.numberOfPoints = locations.length;
+                locationInfo.distanceFromPath = metersToFeet(minDistance * 1000);
+                locationInfo.distanceFromStart = metersToMiles(distances[minIndex]);
+                locationInfo.distances = distances;
+                locationInfo.locations = locations;
+                locationInfo.elevations = elevations;
+
+                locationInfo.latLng = new google.maps.LatLng(locations[minIndex][0], locations[minIndex][1]);
+                locationInfo.elevation = elevations[minIndex];
+
+                return locationInfo;
+            }
+
+            function getDistance(lat1, lon1, lat2, lon2) {
+
+                var R = 6371; // km
+                var φ1 = toRad(lat1);
+                var φ2 = toRad(lat2);
+                var Δφ = toRad(lat2 - lat1);
+                var Δλ = toRad(lon2 - lon1);
+
+                var a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                        Math.cos(φ1) * Math.cos(φ2) *
+                        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+                var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+                var d = R * c;
+
+                return d;
+            }
+
+            function toRad(x) {
+                return x * Math.PI / 180;
+            }
+
+
 // ENTRY POINT, determine what to do by fetching athleteId / stravaState, etc.
 
             //debugger
@@ -1806,6 +2084,7 @@
                     <th class="averageSpeed">Average Speed</th>
                     <th class="calories">Calories</th>
                     <th></th>
+                    <th></th>
                 </tr>
 
             </table>
@@ -1864,6 +2143,7 @@
 
         <div id="map-canvas"></div>
 
+        <div id="mapBuilder-canvas"></div>
     </div>
 </body>
 </html>

@@ -1367,7 +1367,7 @@ function initBikeTrailsDB() {
     );
 
     bikeTrailsDB.query(
-      "CREATE TABLE IF NOT EXISTS trailStartsAtTrailsIntersection  ("
+      "CREATE TABLE IF NOT EXISTS trailAtTrailIntersection  ("
       + "trailIntersectionId SMALLINT NOT NULL, "
       + "trailId SMALLINT NOT NULL, "
       + "PRIMARY KEY(trailIntersectionId))",
@@ -1427,6 +1427,31 @@ function addTrailToDB(responseData, destinationTrailIntersectionId, length, path
                     { "content-type": 'application/json' }
                     );
                 responseData.serverResponse.end(JSON.stringify(result.insertId, null, 3));
+            }
+        }
+    );
+}
+
+function addTrailAtTrailIntersection(responseData, trailIntersectionId, trailId) {
+
+    bikeTrailsDB.query(
+        "INSERT INTO trailattrailintersection (trailIntersectionId, trailId) " +
+        " VALUES (?, ?)",
+        [trailIntersectionId, trailId],
+        function (err) {
+            //if (err) throw err;
+            if (err) {
+                console.log("db error in addTrailAtTrailIntersection");
+                console.log(err.toString());
+            }
+            else {
+                console.log("added trail at trailIntersection successfully");
+
+                responseData.serverResponse.writeHead(
+                    200,
+                    { "content-type": 'application/json' }
+                    );
+                responseData.serverResponse.end(JSON.stringify(0, null, 3));
             }
         }
     );
@@ -1548,6 +1573,13 @@ var server = http.createServer(function (request, response) {
         console.log("elevationGain=" + parsedUrl.query["elevationGain"]);
         console.log("elevationGainReverseDirection=" + parsedUrl.query["elevationGainReverseDirection"]);
         addTrailToDB(responseData, parsedUrl.query["destinationTrailIntersectionId"], parsedUrl.query["length"], parsedUrl.query["path"], parsedUrl.query["elevationGain"], parsedUrl.query["elevationGainReverseDirection"]);
+        return;
+    }
+    else if (parsedUrl.pathname == '/trailAtTrailIntersection') {
+        console.log("trailAtTrailIntersection:");
+        console.log("trailIntersectionId:" + parsedUrl.query["trailIntersectionId"]);
+        console.log("trailId:" + parsedUrl.query["trailId"]);
+        addTrailAtTrailIntersection(responseData, parsedUrl.query["trailIntersectionId"], parsedUrl.query["trailId"]);
         return;
     }
     else if (request.url == '/') {                                      // default to index.html

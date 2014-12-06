@@ -1796,12 +1796,12 @@
                     trailPointIndex++;
                 }
 
-                trail = new Trail(trailLength, path, elevationGain, elevationGainReverseDirection, trailIntersection);
+                trail = new Trail(trailLength, path, elevationGain, elevationGainReverseDirection, segmentStartTrailIntersection, trailIntersection);
 
-                segmentStartTrailIntersection.trailList.push(trail);
+                //segmentStartTrailIntersection.trailList.push(trail);
             }
 
-            function Trail(length, path, elevationGain, elevationGainReverseDirection, trailIntersection) {
+            function Trail(length, path, elevationGain, elevationGainReverseDirection, startTrailIntersection, trailIntersection) {
 
                 this.destinationTrailIntersection = trailIntersection;
                 this.destinationTrailIntersectionId = trailIntersection.id;
@@ -1812,9 +1812,8 @@
 
                 var thisTrail = this;
 
-                //debugger;
 
-                // add object to database
+                // add trail to database
                 $.ajax({
                     url: 'http://' + hostName + ':8080/trail',
                     data: { "destinationTrailIntersectionId": this.destinationTrailIntersectionId, "length": this.length, "path": JSON.stringify(this.path), "elevationGain": this.elevationGain, "elevationGainReverseDirection": this.elevationGainReverseDirection },        
@@ -1828,6 +1827,22 @@
                     console.log(data);
 
                     thisTrail.id = data;
+
+                    startTrailIntersection.trailList.push(thisTrail);
+
+                    // add trail to trail intersection in db
+                    $.ajax({
+                        url: 'http://' + hostName + ':8080/trailAtTrailIntersection',
+                        data: { "trailIntersectionId": startTrailIntersection.id, "trailId": thisTrail.id },
+                        type: 'GET',
+                        dataType: 'json',
+                        error: function () { alert('Failed!'); },
+                    })
+                    .success(function (data, textStatus, jqXHR) {
+                        console.log("trailAtTrailIntersection success");
+                        console.log(textStatus);
+                        console.log(data);
+                    });
                 });
             }
 

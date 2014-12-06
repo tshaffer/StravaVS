@@ -1305,14 +1305,92 @@ function initDB() {
     );
 }
 
+function initBikeTrailsDB() {
+
+    console.log('create connection to bikeTrailsDB');
+
+    bikeTrailsDB = mysql.createConnection({
+        host: dbHostName,
+        //user: 'ted',
+        //password: 'ted69',
+        user: 'stravaTed',
+        password: 'strava-69',
+        database: 'biketrails'
+    });
+
+    console.log("connect to bikeTrailsDB");
+
+    bikeTrailsDB.connect();
+
+    bikeTrailsDB.query(
+      "CREATE TABLE IF NOT EXISTS trailarea ("
+      + "id TINYINT NOT NULL AUTO_INCREMENT, "
+      + "name VARCHAR(64) NOT NULL, "
+      + "PRIMARY KEY(id))",
+      function (err) {
+          if (err) throw err;
+          console.log("create trailarea successful");
+          // note - should not proceed to createServer until this callback is executed
+      }
+    );
+
+    bikeTrailsDB.query(
+      "CREATE TABLE IF NOT EXISTS trail ("
+      + "id SMALLINT NOT NULL AUTO_INCREMENT, "
+      + "destinationTrailIntersection SMALLINT, "
+      + "length FLOAT NOT NULL, "
+      + "path LONGTEXT NOT NULL, "
+      + "elevationGain FLOAT NOT NULL, "
+      + "elevationGainReverseDirection FLOAT NOT NULL, "
+      + "PRIMARY KEY(id))",
+      function (err) {
+          if (err) throw err;
+          console.log("create trail successful");
+          // note - should not proceed to createServer until this callback is executed
+      }
+    );
+
+    bikeTrailsDB.query(
+      "CREATE TABLE IF NOT EXISTS trailintersection ("
+      + "id SMALLINT NOT NULL AUTO_INCREMENT, "
+      + "name VARCHAR(64) NOT NULL, "
+      + "elevation FLOAT NOT NULL, "
+      + "originLatitude FLOAT NOT NULL, "
+      + "originLongitude FLOAT NOT NULL, "
+      + "PRIMARY KEY(id))",
+      function (err) {
+          if (err) throw err;
+          console.log("create trail trailintersection");
+          // note - should not proceed to createServer until this callback is executed
+      }
+    );
+
+    bikeTrailsDB.query(
+      "CREATE TABLE IF NOT EXISTS trailStartsAtTrailsIntersection  ("
+      + "trailIntersectionId SMALLINT NOT NULL, "
+      + "trailId SMALLINT NOT NULL, "
+      + "PRIMARY KEY(trailIntersectionId))",
+      function (err) {
+          if (err) throw err;
+          console.log("create trailStartsAtTrailsIntersection successful");
+          // note - should not proceed to createServer until this callback is executed
+      }
+    );
+
+}
+
+
 var globalCounter = 0;
 var requestCounter = 0;
 var db;
+var bikeTrailsDB;
 
 console.log('begin execution: global counter = ' + globalCounter.toString());
 globalCounter++;
 
 initDB();
+
+initBikeTrailsDB();
 
 var server = http.createServer(function (request, response) {
 

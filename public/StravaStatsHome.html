@@ -1798,6 +1798,21 @@
                 this.activityId = activityId;
                 this.pointOnPath = pointOnPath;
                 this.trailList = [];
+
+                // add object to database
+                debugger;
+                $.ajax({
+                    url: 'http://' + hostName + ':8080/trailIntersection',
+                    data: { "name": this.name, "latitude": this.origin.lat(), "longitude": this.origin.lng(), "elevation": this.elevation, "activityId": this.activityId },
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    console.log("trailIntersection success");
+                    console.log(textStatus);
+                    console.log(data);
+                });
             }
 
 

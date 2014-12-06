@@ -1693,17 +1693,19 @@
                         trailIntersectionMarker = new google.maps.Circle(trailIntersectionMarkerOptions);
 
                         // add a TrailIntersection object at the point on the activity closest to the selected point
-                        var trailIntersection = new TrailIntersection(trailIntersectionName, pointOnPath.latLng, pointOnPath.elevation, pointOnPath.index, selectedActivity.activityId, pointOnPath);
-                        trailIntersections.push(trailIntersection);
-                        google.maps.event.addListener(trailIntersectionMarker, 'click', trailIntersectionSelectedEventHandler);
+                        addTrailIntersectionThenTrail(trailIntersectionName, pointOnPath);
+                        //var trailIntersection = new TrailIntersection(trailIntersectionName, pointOnPath.latLng, pointOnPath.elevation, pointOnPath.index, selectedActivity.activityId, pointOnPath);
+                        //trailIntersections.push(trailIntersection);
+                        //google.maps.event.addListener(trailIntersectionMarker, 'click', trailIntersectionSelectedEventHandler);
 
-                        if (buildingTrailSegment) {
-                            // end of trail; add trail to segmentStartTrailIntersection.trailList
-                            addTrail(trailIntersection, pointOnPath);
-                        }
-                        else {
-                            segmentStartTrailIntersection = trailIntersection;
-                        }
+                        //if (buildingTrailSegment) {
+                        //    // end of trail; add trail to segmentStartTrailIntersection.trailList
+                        //    addTrail(trailIntersection, pointOnPath);
+                        //}
+                        //else {
+                        //    segmentStartTrailIntersection = trailIntersection;
+                        //}
+
                         buildingTrailSegment = !buildingTrailSegment;
 
                         console.log("segmentBuilderEvent, buildingTrailSegment = " + buildingTrailSegment.toString());
@@ -1738,6 +1740,7 @@
                             //      segmentStartTrailIntersection
                             // destination is
                             //      location associated with selectedTrailIntersection
+                            debugger;
                             addTrail(selectedTrailIntersection, segmentStartTrailIntersection.pointOnPath);
                         }
                         else {
@@ -1749,6 +1752,22 @@
                 else {
                     console.log("Error - trail intersection not found");
                 }
+            }
+
+            function addTrailIntersectionThenTrail(trailIntersectionName, pointOnPath) {
+
+                var trailIntersection = new TrailIntersection(trailIntersectionName, pointOnPath.latLng, pointOnPath.elevation, pointOnPath.index, selectedActivity.activityId, pointOnPath, buildingTrailSegment);
+                trailIntersections.push(trailIntersection);
+                google.maps.event.addListener(trailIntersectionMarker, 'click', trailIntersectionSelectedEventHandler);
+
+                if (buildingTrailSegment) {
+                    // end of trail; add trail to segmentStartTrailIntersection.trailList
+                    //addTrail(trailIntersection, pointOnPath);
+                }
+                else {
+                    segmentStartTrailIntersection = trailIntersection;
+                }
+
             }
 
             // add a trail from 'pointOnPath' to 'trailIntersection'
@@ -1783,14 +1802,36 @@
             }
 
             function Trail(length, path, elevationGain, elevationGainReverseDirection, trailIntersection) {
+
+                this.destinationTrailIntersection = trailIntersection;
+                this.destinationTrailIntersectionId = trailIntersection.id;
                 this.length = length;
                 this.path = path;
                 this.elevationGain = elevationGain;
                 this.elevationGainReverseDirection = elevationGainReverseDirection;
-                this.endTrailIntersection = trailIntersection;
+
+                var thisTrail = this;
+
+                //debugger;
+
+                // add object to database
+                $.ajax({
+                    url: 'http://' + hostName + ':8080/trail',
+                    data: { "destinationTrailIntersectionId": this.destinationTrailIntersectionId, "length": this.length, "path": JSON.stringify(this.path), "elevationGain": this.elevationGain, "elevationGainReverseDirection": this.elevationGainReverseDirection },        
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    console.log("trail success");
+                    console.log(textStatus);
+                    console.log(data);
+
+                    thisTrail.id = data;
+                });
             }
 
-            function TrailIntersection(name, origin, elevation, index, activityId, pointOnPath) {
+            function TrailIntersection(name, origin, elevation, index, activityId, pointOnPath, addTrailToIntersection) {
                 this.name = name;
                 this.origin = origin;
                 this.elevation = elevation;
@@ -1799,8 +1840,9 @@
                 this.pointOnPath = pointOnPath;
                 this.trailList = [];
 
+                var thisTrailIntersection = this;
+
                 // add object to database
-                debugger;
                 $.ajax({
                     url: 'http://' + hostName + ':8080/trailIntersection',
                     data: { "name": this.name, "latitude": this.origin.lat(), "longitude": this.origin.lng(), "elevation": this.elevation, "activityId": this.activityId },
@@ -1812,6 +1854,14 @@
                     console.log("trailIntersection success");
                     console.log(textStatus);
                     console.log(data);
+
+                    //debugger;
+
+                    thisTrailIntersection.id = data;
+
+                    if (addTrailToIntersection) {
+                        addTrail(thisTrailIntersection, pointOnPath);
+                    }
                 });
             }
 

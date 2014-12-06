@@ -1337,7 +1337,7 @@ function initBikeTrailsDB() {
     bikeTrailsDB.query(
       "CREATE TABLE IF NOT EXISTS trail ("
       + "id SMALLINT NOT NULL AUTO_INCREMENT, "
-      + "destinationTrailIntersection SMALLINT, "
+      + "destinationTrailIntersectionId SMALLINT, "
       + "length FLOAT NOT NULL, "
       + "path LONGTEXT NOT NULL, "
       + "elevationGain FLOAT NOT NULL, "
@@ -1394,6 +1394,32 @@ function addTrailIntersectionToDB(responseData, name, elevation, latitude, longi
             }
             else {
                 console.log("added trailIntersection successfully");
+                console.log(result.insertId);
+
+                responseData.serverResponse.writeHead(
+                    200,
+                    { "content-type": 'application/json' }
+                    );
+                responseData.serverResponse.end(JSON.stringify(result.insertId, null, 3));
+            }
+        }
+    );
+}
+
+function addTrailToDB(responseData, destinationTrailIntersectionId, length, path, elevationGain, elevationGainReverseDirection) {
+
+    bikeTrailsDB.query(
+        "INSERT INTO trail (destinationTrailIntersectionId, length, path, elevationGain, elevationGainReverseDirection) " +
+        " VALUES (?, ?, ?, ?, ?)",
+        [destinationTrailIntersectionId, length, path, elevationGain, elevationGainReverseDirection],
+        function (err, result) {
+            //if (err) throw err;
+            if (err) {
+                console.log("db error in addTrailToDB");
+                console.log(err.toString());
+            }
+            else {
+                console.log("added trail successfully");
                 console.log(result.insertId);
 
                 responseData.serverResponse.writeHead(
@@ -1511,6 +1537,17 @@ var server = http.createServer(function (request, response) {
         console.log("elevation=" + parsedUrl.query["elevation"]);
         console.log("activityId=" + parsedUrl.query["activityId"]);
         addTrailIntersectionToDB(responseData, parsedUrl.query["name"], parsedUrl.query["elevation"], parsedUrl.query["latitude"], parsedUrl.query["longitude"], parsedUrl.query["activityId"]);
+        return;
+    }
+    else if (parsedUrl.pathname == '/trail') {
+        console.log("trail:");
+        console.log("destinationTrailIntersectionId=" + parsedUrl.query["destinationTrailIntersectionId"]);
+        console.log("length=" + parsedUrl.query["length"]);
+        console.log("path=");
+        console.log(parsedUrl.query["path"]);
+        console.log("elevationGain=" + parsedUrl.query["elevationGain"]);
+        console.log("elevationGainReverseDirection=" + parsedUrl.query["elevationGainReverseDirection"]);
+        addTrailToDB(responseData, parsedUrl.query["destinationTrailIntersectionId"], parsedUrl.query["length"], parsedUrl.query["path"], parsedUrl.query["elevationGain"], parsedUrl.query["elevationGainReverseDirection"]);
         return;
     }
     else if (request.url == '/') {                                      // default to index.html

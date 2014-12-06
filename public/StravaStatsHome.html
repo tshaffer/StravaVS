@@ -1693,16 +1693,13 @@
                         trailIntersectionMarker = new google.maps.Circle(trailIntersectionMarkerOptions);
 
                         // add a TrailIntersection object at the point on the activity closest to the selected point
-                        var trailIntersection = new TrailIntersection(trailIntersectionName, pointOnPath.latLng, pointOnPath.elevation, pointOnPath.index, pointOnPath);
+                        var trailIntersection = new TrailIntersection(trailIntersectionName, pointOnPath.latLng, pointOnPath.elevation, pointOnPath.index, selectedActivity.activityId, pointOnPath);
                         trailIntersections.push(trailIntersection);
                         google.maps.event.addListener(trailIntersectionMarker, 'click', trailIntersectionSelectedEventHandler);
 
                         if (buildingTrailSegment) {
-
                             // end of trail; add trail to segmentStartTrailIntersection.trailList
                             addTrail(trailIntersection, pointOnPath);
-
-                            debugger;
                         }
                         else {
                             segmentStartTrailIntersection = trailIntersection;
@@ -1742,7 +1739,6 @@
                             // destination is
                             //      location associated with selectedTrailIntersection
                             addTrail(selectedTrailIntersection, segmentStartTrailIntersection.pointOnPath);
-                            debugger;
                         }
                         else {
                             segmentStartTrailIntersection = selectedTrailIntersection;
@@ -1794,11 +1790,12 @@
                 this.endTrailIntersection = trailIntersection;
             }
 
-            function TrailIntersection(name, origin, elevation, index, pointOnPath) {
+            function TrailIntersection(name, origin, elevation, index, activityId, pointOnPath) {
                 this.name = name;
                 this.origin = origin;
                 this.elevation = elevation;
                 this.index = index;
+                this.activityId = activityId;
                 this.pointOnPath = pointOnPath;
                 this.trailList = [];
             }

@@ -512,8 +512,9 @@
                 var myOptions = {
                     zoom: 14,
                     center: myLatlng,
-                    mapTypeId: google.maps.MapTypeId.TERRAIN
-                }
+                    //mapTypeId: google.maps.MapTypeId.TERRAIN
+                    mapTypeId: google.maps.MapTypeId.ROADMAP
+            }
 
                 var createNewMap;
                 if (activityMap == undefined) {
@@ -1657,6 +1658,51 @@
 
                 google.maps.event.addListener(activityMap, 'click', failedSegmentBuilderEvent);
                 google.maps.event.addListener(activityPath, 'click', segmentBuilderEvent);
+
+// retrieve data from the database if it exists
+
+                // trailIntersections
+                var trailIntersections;
+                $.ajax({
+                    url: 'http://' + hostName + ':8080/trailIntersections',
+                    type: 'GET',
+                    dataType: 'json',
+                    data: { },
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    trailIntersections = data;
+                    debugger;
+                });
+
+                // trails
+                var trails;
+                $.ajax({
+                    url: 'http://' + hostName + ':8080/trails',
+                    type: 'GET',
+                    dataType: 'json',
+                    data: {},
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    trails = data;
+                    debugger;
+                });
+
+                // trailsAtTrailIntersections
+                var trailsAtTrailIntersections;
+                $.ajax({
+                    url: 'http://' + hostName + ':8080/trailsAtTrailIntersections',
+                    type: 'GET',
+                    dataType: 'json',
+                    data: {},
+                    error: function () { alert('Failed!'); },
+                })
+                .success(function (data, textStatus, jqXHR) {
+                    trailsAtTrailIntersections = data;
+                    debugger;
+                });
+
             }
 
             // segmentBuilderEvent is invoked when user clicks on the path (however, not on a previously created trail intersection)
@@ -1770,7 +1816,7 @@
 
             }
 
-            // add a trail from 'pointOnPath' to 'trailIntersection'
+            // add a trail from 'segmentStartTrailIntersection' / 'pointOnPath' to 'trailIntersection'
             function addTrail(trailIntersection, pointOnPath) {
 
                 var trailLength = 0;

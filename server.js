@@ -1380,6 +1380,102 @@ function initBikeTrailsDB() {
 
 }
 
+function getTrailIntersections(responseData) {
+
+    var query = "SELECT * FROM trailintersection " ;
+    bikeTrailsDB.query(
+      query,
+      [],
+      function (err, rows) {
+          if (err) throw err;
+          console.log("getTrailIntersections query returned");
+          console.log("return from query - rows length = " + rows.length);
+
+          trailIntersections = [];
+
+          for (var i in rows) {
+              trailIntersection = {};
+              trailIntersection.id = rows[i].id;
+              trailIntersection.name = rows[i].name;
+              trailIntersection.elevation = rows[i].elevation;
+              trailIntersection.latitude = rows[i].latitude;
+              trailIntersection.longitude = rows[i].longitude;
+              trailIntersection.activityId = rows[i].activityId;
+
+              trailIntersections.push(trailIntersection);
+          }
+
+          responseData.serverResponse.writeHead(
+            200,
+            { "content-type": 'application/json' }
+          );
+          responseData.serverResponse.end(JSON.stringify(trailIntersections, null, 3));
+      }
+    );
+}
+
+function getTrails(responseData) {
+
+    var query = "SELECT * FROM trail ";
+    bikeTrailsDB.query(
+      query,
+      [],
+      function (err, rows) {
+          if (err) throw err;
+          console.log("getTrails query returned");
+          console.log("return from query - rows length = " + rows.length);
+
+          trails = [];
+
+          for (var i in rows) {
+              trail = {};
+              trail.id = rows[i].id;
+              trail.destinationTrailIntersectionId = rows[i].destinationTrailIntersectionId;
+              trail.length = rows[i].length;
+              trail.path = rows[i].path;
+              trail.elevationGain = rows[i].elevationGain;
+              trail.elevationGainReverseDirection = rows[i].elevationGainReverseDirection;
+              trails.push(trail);
+          }
+
+          responseData.serverResponse.writeHead(
+            200,
+            { "content-type": 'application/json' }
+          );
+          responseData.serverResponse.end(JSON.stringify(trails, null, 3));
+      }
+    );
+}
+
+function getTrailsAtTrailIntersections(responseData) {
+
+    var query = "SELECT * FROM trailattrailintersection ";
+    bikeTrailsDB.query(
+      query,
+      [],
+      function (err, rows) {
+          if (err) throw err;
+          console.log("getTrailsAtTrailIntersections query returned");
+          console.log("return from query - rows length = " + rows.length);
+
+          trailsAtTrailIntersections = [];
+
+          for (var i in rows) {
+              trailAtTrailIntersection = {};
+              trailAtTrailIntersection.trailIntersectionId = rows[i].trailIntersectionId;
+              trailAtTrailIntersection.trailId = rows[i].trailId;
+              trailsAtTrailIntersections.push(trailAtTrailIntersection);
+          }
+
+          responseData.serverResponse.writeHead(
+            200,
+            { "content-type": 'application/json' }
+          );
+          responseData.serverResponse.end(JSON.stringify(trailsAtTrailIntersections, null, 3));
+      }
+    );
+}
+
 function addTrailIntersectionToDB(responseData, name, elevation, latitude, longitude, activityId) {
 
     bikeTrailsDB.query(
@@ -1552,6 +1648,18 @@ var server = http.createServer(function (request, response) {
         console.log("bestTimes, segmentIds are: ");
         console.log(parsedUrl.query["segmentIds[]"]);
         getBestTimes(responseData, parsedUrl.query["segmentIds[]"]);
+        return;
+    }
+    else if (parsedUrl.pathname == "/trailIntersections") {
+        getTrailIntersections(responseData);
+        return;
+    }
+    else if (parsedUrl.pathname == "/trails") {
+        getTrails(responseData);
+        return;
+    }
+    else if (parsedUrl.pathname == "/trailsAtTrailIntersections") {
+        getTrailsAtTrailIntersections(responseData);
         return;
     }
     else if (parsedUrl.pathname == '/trailIntersection') {

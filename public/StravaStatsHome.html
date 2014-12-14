@@ -1659,24 +1659,40 @@
                 google.maps.event.addListener(activityMap, 'click', failedSegmentBuilderEvent);
                 google.maps.event.addListener(activityPath, 'click', segmentBuilderEvent);
 
-// retrieve data from the database if it exists
+                // retrieve data from the database if it exists
+                trailIntersections = []; // may not be necessary - might already be guaranteed to be empty
+                readTrailDataFromDB();
+            }
+
+            function readTrailDataFromDB() {
+
+                var trailIntersectionsFromDB;
+                var trails;
+                var trailsAtTrailIntersections;
+
+                var trailIntersectionsRetrieved = false;
+                var trailsRetrieved = false;
+                var trailsAtTrailIntersectionsRetrieved = false;
 
                 // trailIntersections
-                var trailIntersections;
                 $.ajax({
                     url: 'http://' + hostName + ':8080/trailIntersections',
                     type: 'GET',
                     dataType: 'json',
-                    data: { },
+                    data: {},
                     error: function () { alert('Failed!'); },
                 })
                 .success(function (data, textStatus, jqXHR) {
-                    trailIntersections = data;
-                    debugger;
+                    trailIntersectionsFromDB = data;
+                    trailIntersectionsRetrieved = true;
+
+                    if (trailIntersectionsRetrieved && trailsRetrieved && trailsAtTrailIntersectionsRetrieved) {
+                        resolveTrailData(trailIntersectionsFromDB, trails, trailsAtTrailIntersections);
+                        return;
+                    }
                 });
 
                 // trails
-                var trails;
                 $.ajax({
                     url: 'http://' + hostName + ':8080/trails',
                     type: 'GET',
@@ -1686,11 +1702,15 @@
                 })
                 .success(function (data, textStatus, jqXHR) {
                     trails = data;
-                    debugger;
+                    trailsRetrieved = true;
+
+                    if (trailIntersectionsRetrieved && trailsRetrieved && trailsAtTrailIntersectionsRetrieved) {
+                        resolveTrailData(trailIntersectionsFromDB, trails, trailsAtTrailIntersections);
+                        return;
+                    }
                 });
 
                 // trailsAtTrailIntersections
-                var trailsAtTrailIntersections;
                 $.ajax({
                     url: 'http://' + hostName + ':8080/trailsAtTrailIntersections',
                     type: 'GET',
@@ -1700,9 +1720,109 @@
                 })
                 .success(function (data, textStatus, jqXHR) {
                     trailsAtTrailIntersections = data;
-                    debugger;
+                    trailsAtTrailIntersectionsRetrieved = true;
+
+                    if (trailIntersectionsRetrieved && trailsRetrieved && trailsAtTrailIntersectionsRetrieved) {
+                        resolveTrailData(trailIntersectionsFromDB, trails, trailsAtTrailIntersections);
+                        return;
+                    }
+                });
+            }
+
+            function resolveTrailData(trailIntersectionsFromDB, trails, trailsAtTrailIntersections) {
+
+                debugger;
+
+                $.each(trailIntersectionsFromDB, function (index, trailIntersectionFromDB) {
+                    var origin = new google.maps.LatLng(trailIntersectionFromDB.latitude, trailIntersectionFromDB.longitude);
+
+                    var trailIntersection = new TrailIntersectionMin(
+                        trailIntersectionFromDB.name,
+                        origin,
+                        trailIntersectionFromDB.elevation,
+                        trailIntersectionFromDB.activityId,
+                        trailIntersectionFromDB.id
+                        );
+
+                    trailIntersections.push(trailIntersection);
+                    //google.maps.event.addListener(trailIntersectionMarker, 'click', trailIntersectionSelectedEventHandler);
                 });
 
+                var trailMins = [];
+
+                $.each(trails, function (index, trailFromDB) {
+
+                    var trail = new TrailMin(
+                        trailFromDB.length,
+                        trailFromDB.path,
+                        trailFromDB.elevationGain,
+                        trailFromDB.elevationGainReverseDirection,
+                        trailFromDB.id,
+                        trailFromDB.destinationTrailIntersectionId
+                        );
+
+                    trailMins.push(trail);
+                });
+
+                addDestinationTrailIntersectionsToTrails(trailMins);
+
+                addTrailsFromTrailIntersections(trailsAtTrailIntersections, trailMins);
+
+                debugger;
+            }
+
+            // Iterate through trail objects
+            // Using destinationTrailIntersectionId (from trail objects), find the matching destinationTrailIntersection and set destinationTrailIntersection member
+            function addDestinationTrailIntersectionsToTrails(trailMins) {
+
+                $.each(trailMins, function (trailIndex, trailMin) {
+                    //minTrail = trailMins[trailIndex];
+                    $.each(trailIntersections, function (trailIntersectionIndex, minTrailIntersection) {
+                        if (trailMin.destinationTrailIntersectionId == minTrailIntersection.id) {
+                            trailMin.destinationTrailIntersection = minTrailIntersection;
+                        }
+                    });
+                });
+            }
+
+            // Iterate through data returned from trailAtTrailIntersection
+            // Find trailIntersection object associated with trailIntersectionId
+            // Find trail object associated with trailId
+            // Push trail object onto trailIntersection.trailList
+            function addTrailsFromTrailIntersections(trailsAtTrailIntersections, trailMins) {
+                $.each(trailsAtTrailIntersections, function (index, trailAtTrailIntersection) {
+
+                    //debugger;
+
+                    var trailIntersection = getTrailIntersection(trailAtTrailIntersection.trailIntersectionId);
+                    if (trailIntersection == null) debugger;
+
+                    var trail = getTrail(trailMins, trailAtTrailIntersection.trailId);
+                    if (trail == null) debugger;
+
+                    trailIntersection.trailList.push(trail);
+                });
+            }
+
+            function getTrailIntersection(trailIntersectionId) {
+                var matchingTrailIntersection = null;
+                $.each(trailIntersections, function (index, trailIntersection) {
+                    if (trailIntersection.id == trailIntersectionId) {
+                        matchingTrailIntersection = trailIntersection;
+                        return;
+                    }
+                });
+                return matchingTrailIntersection;
+            }
+
+            function getTrail(minTrails, trailId) {
+                var matchingTrail = null;
+                $.each(minTrails, function (index, minTrail) {
+                    if (minTrail.id == trailId) {
+                        matchingTrail = minTrail;
+                    }
+                });
+                return matchingTrail;
             }
 
             // segmentBuilderEvent is invoked when user clicks on the path (however, not on a previously created trail intersection)
@@ -1890,6 +2010,24 @@
                         console.log(data);
                     });
                 });
+            }
+
+            function TrailMin(length, path, elevationGain, elevationGainReverserDirection, id, destinationTrailIntersectionId) {
+                this.length = length;
+                this.path = path;
+                this.elevationGain = elevationGain;
+                this.elevationGainReverserDirection = elevationGainReverserDirection;
+                this.id = id;
+                this.destinationTrailIntersectionId = destinationTrailIntersectionId
+            }
+
+            function TrailIntersectionMin(name, origin, elevation, activityId, id) {
+                this.name = name;
+                this.origin = origin;
+                this.elevation = elevation;
+                this.activityId = activityId;
+                this.id = id;
+                this.trailList = [];
             }
 
             function TrailIntersection(name, origin, elevation, index, activityId, pointOnPath, addTrailToIntersection) {

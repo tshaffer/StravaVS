@@ -1222,7 +1222,7 @@
                 startMarker = new google.maps.Circle(startMarkerOptions);
 
                 // add listener for when user clicks on activity start point
-                google.maps.event.addListener(startMarker, 'click', segmentBuilderEvent);
+                google.maps.event.addListener(startMarker, 'click', segmentBuilderEventHandler);
 
                 // Add our over/out handlers.
                 google.visualization.events.addListener(chart, 'onmouseover', chartMouseOver);
@@ -1657,11 +1657,17 @@
                 showMapBuilder();
 
                 google.maps.event.addListener(activityMap, 'click', failedSegmentBuilderEvent);
-                google.maps.event.addListener(activityPath, 'click', segmentBuilderEvent);
+                google.maps.event.addListener(activityPath, 'click', segmentBuilderEventHandler);
 
                 // retrieve data from the database if it exists
                 trailIntersections = []; // may not be necessary - might already be guaranteed to be empty
                 readTrailDataFromDB();
+
+                //debugger;
+
+                // draw graphics for intersections
+                // add event listeners for intersections
+                // draw graphics for trails
             }
 
             function readTrailDataFromDB() {
@@ -1731,8 +1737,6 @@
 
             function resolveTrailData(trailIntersectionsFromDB, trails, trailsAtTrailIntersections) {
 
-                debugger;
-
                 $.each(trailIntersectionsFromDB, function (index, trailIntersectionFromDB) {
                     var origin = new google.maps.LatLng(trailIntersectionFromDB.latitude, trailIntersectionFromDB.longitude);
 
@@ -1768,7 +1772,42 @@
 
                 addTrailsFromTrailIntersections(trailsAtTrailIntersections, trailMins);
 
-                debugger;
+                completeRestore();
+
+                //debugger;
+            }
+
+            function completeRestore() {
+                addTrailIntersectionMarkers();
+                drawTrails();
+            }
+
+            function addTrailIntersectionMarkers() {
+                $.each(trailIntersections, function (index, trailIntersection) {
+                    addTrailIntersectionMarker(trailIntersection)
+                });
+            }
+
+            function addTrailIntersectionMarker(trailIntersection) {
+                var trailIntersectionMarkerOptions = {
+                    strokeColor: '#FFFFFF',
+                    strokeOpacity: 1,
+                    strokeWeight: 2,
+                    fillColor: '#000000',
+                    fillOpacity: 1,
+                    map: activityMap,
+                    center: trailIntersection.origin,
+                    radius: 25,
+                    editable: false,
+                    draggable: false
+                };
+
+                trailIntersectionMarker = new google.maps.Circle(trailIntersectionMarkerOptions);
+
+                google.maps.event.addListener(trailIntersectionMarker, 'click', trailIntersectionSelectedEventHandler);
+            }
+
+            function drawTrails() {
             }
 
             // Iterate through trail objects
@@ -1791,9 +1830,6 @@
             // Push trail object onto trailIntersection.trailList
             function addTrailsFromTrailIntersections(trailsAtTrailIntersections, trailMins) {
                 $.each(trailsAtTrailIntersections, function (index, trailAtTrailIntersection) {
-
-                    //debugger;
-
                     var trailIntersection = getTrailIntersection(trailAtTrailIntersection.trailIntersectionId);
                     if (trailIntersection == null) debugger;
 
@@ -1825,8 +1861,8 @@
                 return matchingTrail;
             }
 
-            // segmentBuilderEvent is invoked when user clicks on the path (however, not on a previously created trail intersection)
-            function segmentBuilderEvent(event) {
+            // segmentBuilderEventHandler is invoked when user clicks on the path (however, not on a previously created trail intersection)
+            function segmentBuilderEventHandler(event) {
 
                 // event.latLng
                 console.log("lat=" + event.latLng.lat() + ",longitude=" + event.latLng.lng());
@@ -1874,7 +1910,7 @@
 
                         buildingTrailSegment = !buildingTrailSegment;
 
-                        console.log("segmentBuilderEvent, buildingTrailSegment = " + buildingTrailSegment.toString());
+                        console.log("segmentBuilderEventHandler, buildingTrailSegment = " + buildingTrailSegment.toString());
                     }
                 }
             }
@@ -1891,6 +1927,16 @@
                     var originLng = trailIntersection.origin.lng();
                     if (selectedLat == originLat && selectedLng == originLng) {
                         selectedTrailIntersection = trailIntersection;
+
+                        if (selectedTrailIntersection.index == undefined) {
+                            if (selectedTrailIntersection.activityId != selectedActivity.activityId) {
+                                // what to do? user is clicking on a point from the database that was created using an activity other than the current one
+                                debugger;
+                            }
+                            var pointOnPath = getClosestPoint(selectedTrailIntersection.origin.lat(), selectedTrailIntersection.origin.lng());
+                            if (pointOnPath == -1) debugger;
+                            selectedTrailIntersection.index = pointOnPath.index;
+                        }
                         return;
                     }
                 });
@@ -2067,7 +2113,7 @@
 
             function failedSegmentBuilderEvent(event) {
                 console.log("missed");
-                segmentBuilderEvent(event);
+                segmentBuilderEventHandler(event);
             }
 
             function getClosestPoint(lat, lng) {
@@ -2113,7 +2159,7 @@
                     }
                 }
 
-                console.log("segmentBuilderEvent: minIndex=" + minIndex.toString() + ", minDistance=" + minDistance.toString());
+                console.log("getClosestPoint: minIndex=" + minIndex.toString() + ", minDistance=" + minDistance.toString());
 
                 locationInfo.index = minIndex;
                 locationInfo.numberOfPoints = locations.length;

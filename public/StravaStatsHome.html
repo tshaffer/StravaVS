@@ -1922,6 +1922,8 @@
                 var selectedLat = this.center.lat();
                 var selectedLng = this.center.lng();
 
+                var useTrailIntersection;
+
                 $.each(trailIntersections, function (index, trailIntersection) {
                     var originLat = trailIntersection.origin.lat();
                     var originLng = trailIntersection.origin.lng();
@@ -1929,13 +1931,43 @@
                         selectedTrailIntersection = trailIntersection;
 
                         if (selectedTrailIntersection.index == undefined) {
-                            if (selectedTrailIntersection.activityId != selectedActivity.activityId) {
-                                // what to do? user is clicking on a point from the database that was created using an activity other than the current one
-                                debugger;
+
+                            // this implies the selectedTrailIntersection is not from this session; it was read in from the db
+                            var closestPoints = getClosestPoints(selectedTrailIntersection.origin.lat(), selectedTrailIntersection.origin.lng());
+
+                            var keepGoing = true;
+                            var pointIndex = 0;
+                            while (keepGoing) { // also check to ensure that there are more points
+                                var pointOnPath = closestPoints[pointIndex];
+                                var usePoint = confirm("Trail intersection selected: " + selectedTrailIntersection.name + ". Use the point : " + pointOnPath.distanceFromStart.toFixed(2) + " miles from the start of the ride (at point " + pointOnPath.index.toString() + " of " + pointOnPath.numberOfPoints.toString() + ")?");
+                                if (usePoint == true) {
+                                    selectedTrailIntersection.index = pointOnPath.index;
+                                    useTrailIntersection = true;
+                                    return;
+                                }
+                                else {
+                                    var keepGoing = confirm("Continue looking?");
+                                    if (keepGoing == true) {
+                                        pointIndex++;
+                                    }
+                                    else {
+                                        selectedTrailIntersection = null;
+                                        return;
+                                    }
+                                }
                             }
-                            var pointOnPath = getClosestPoint(selectedTrailIntersection.origin.lat(), selectedTrailIntersection.origin.lng());
-                            if (pointOnPath == -1) debugger;
-                            selectedTrailIntersection.index = pointOnPath.index;
+
+                            //if (selectedTrailIntersection.activityId != selectedActivity.activityId) {
+                            //    // what to do? user is clicking on a point from the database that was created using an activity other than the current one
+                            //    var closestPoints = getClosestPoints(selectedTrailIntersection.origin.lat(), selectedTrailIntersection.origin.lng());
+                            //    debugger;
+                            //}
+                            //else {
+                            //    var pointOnPath = getClosestPoint(selectedTrailIntersection.origin.lat(), selectedTrailIntersection.origin.lng());
+                            //    if (pointOnPath == -1) debugger;
+                            //}
+
+                            //selectedTrailIntersection.index = pointOnPath.index;
                         }
                         return;
                     }
@@ -1944,7 +1976,9 @@
                 if (selectedTrailIntersection != null) {
                     console.log("clicked on " + selectedTrailIntersection.name);
 
-                    var useTrailIntersection = confirm("Do you want to use the existing trail intersection " + selectedTrailIntersection.name + "?");
+                    if (useTrailIntersection == undefined) {
+                        var useTrailIntersection = confirm("Do you want to use the existing trail intersection " + selectedTrailIntersection.name + "?");
+                    }
                     if (useTrailIntersection == true) {
                         if (buildingTrailSegment) {
                             // add a trail segment from the origin to this trail intersection
@@ -2116,7 +2150,7 @@
                 segmentBuilderEventHandler(event);
             }
 
-            function getClosestPoint(lat, lng) {
+            function getStreamData() {
 
                 var stream = JSON.parse(selectedActivity.stream);
 
@@ -2143,6 +2177,69 @@
                     console.log("stream undefined");
                     return -1;
                 }
+
+                streamData = {};
+                streamData.distances = distances;
+                streamData.locations = locations;
+                streamData.elevations = elevations;
+
+                return streamData;
+            }
+
+            function getClosestPoints(lat, lng) {
+
+                var streamData = getStreamData();
+                if (streamData == -1) return -1;
+
+                var distances = streamData.distances;
+                var locations = streamData.locations;
+                var elevations = streamData.elevations;
+
+                var distancesFromSelectedPoint = [];
+
+                for (i = 0; i < locations.length; i++) {
+
+                    var location = locations[i];
+
+                    var distanceFromSelectedPoint = getDistance(location[0], location[1], lat, lng);
+
+                    locationInfo = {};
+                    locationInfo.index = i;
+                    locationInfo.distanceFromSelectedPoint = distanceFromSelectedPoint
+                    locationInfo.numberOfPoints = locations.length;
+                    locationInfo.distanceFromSelectedPoint = metersToFeet(distanceFromSelectedPoint * 1000);
+                    locationInfo.distanceFromStart = metersToMiles(distances[i]);
+                    locationInfo.distances = distances;
+                    locationInfo.locations = locations;
+                    locationInfo.elevations = elevations;
+
+                    locationInfo.latLng = new google.maps.LatLng(locations[i][0], locations[i][1]);
+                    locationInfo.elevation = elevations[i];
+
+                    distancesFromSelectedPoint.push(locationInfo);
+                }
+
+                distancesFromSelectedPoint.sort(compareLocationInfo);
+
+                return distancesFromSelectedPoint;
+            }
+
+            function compareLocationInfo(a, b) {
+                if (a.distanceFromSelectedPoint < b.distanceFromSelectedPoint)
+                    return -1;
+                if (a.distanceFromSelectedPoint > b.distanceFromSelectedPoint)
+                    return 1;
+                return 0;
+            }
+
+            function getClosestPoint(lat, lng) {
+
+                var streamData = getStreamData();
+                if (streamData == -1) return -1;
+
+                var distances = streamData.distances;
+                var locations = streamData.locations;
+                var elevations = streamData.elevations;
 
                 var locationInfo = {};
                 var minDistance = 9999;
